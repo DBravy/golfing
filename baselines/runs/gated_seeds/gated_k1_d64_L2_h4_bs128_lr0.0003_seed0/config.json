@@ -1,0 +1,32 @@
+{
+  "n_layers": 2,
+  "d_model": 64,
+  "n_heads": 4,
+  "d_ff_mult": 4,
+  "dropout": 0.0,
+  "batch_size": 128,
+  "lr": 0.0003,
+  "weight_decay": 0.01,
+  "total_steps": 20000,
+  "warmup_steps": 500,
+  "grad_clip": 1.0,
+  "eval_every": 250,
+  "eval_batch_size": 256,
+  "n_eval_problems": 512,
+  "task_mix": [
+    0.25,
+    0.25,
+    0.25,
+    0.25
+  ],
+  "mod_p": 97,
+  "seq_len_sort": 5,
+  "seq_len_reverse": 5,
+  "add_digits": 3,
+  "seed": 0,
+  "device": "cpu",
+  "log_dir": "runs/gated_seeds/gated_k1_d64_L2_h4_bs128_lr0.0003_seed0",
+  "compile_model": false,
+  "top_k": 1,
+  "gate_enabled": true
+}

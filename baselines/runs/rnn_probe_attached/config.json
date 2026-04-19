@@ -1,0 +1,46 @@
+{
+  "baseline": {
+    "n_layers": 2,
+    "d_model": 64,
+    "n_heads": 4,
+    "d_ff_mult": 4,
+    "dropout": 0.0,
+    "batch_size": 128,
+    "lr": 0.0003,
+    "weight_decay": 0.01,
+    "total_steps": 20000,
+    "warmup_steps": 500,
+    "grad_clip": 1.0,
+    "eval_every": 250,
+    "eval_batch_size": 256,
+    "n_eval_problems": 512,
+    "task_mix": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "mod_p": 97,
+    "seq_len_sort": 5,
+    "seq_len_reverse": 5,
+    "add_digits": 3,
+    "seed": 0,
+    "device": "cpu",
+    "log_dir": "runs/attached_s0",
+    "compile_model": false
+  },
+  "probe": {
+    "n_categoricals": 8,
+    "n_classes": 8,
+    "d_hidden": 64,
+    "d_mlp": 128,
+    "w_recon": 1.0,
+    "w_loss": 1.0,
+    "probe_lr": 0.0003,
+    "probe_weight_decay": 0.0,
+    "source_layer": 0,
+    "target_layer": 1,
+    "attach": true,
+    "w_probe_to_xform": 1.0
+  }
+}

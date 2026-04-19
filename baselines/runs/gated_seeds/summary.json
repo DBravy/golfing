@@ -1,0 +1,298 @@
+[
+  {
+    "run_name": "gated_k1_d64_L2_h4_bs128_lr0.0003_seed0",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 0,
+      "device": "cpu",
+      "log_dir": "runs/gated_seeds/gated_k1_d64_L2_h4_bs128_lr0.0003_seed0",
+      "compile_model": false,
+      "top_k": 1,
+      "gate_enabled": true
+    },
+    "n_params": 101504,
+    "gate_enabled": true,
+    "top_k": 1,
+    "final_acc": {
+      "addition": 0.728515625,
+      "sort": 0.978515625,
+      "reverse": 0.998046875,
+      "modadd": 0.9921875
+    },
+    "best_acc": {
+      "addition": 0.751953125,
+      "sort": 0.998046875,
+      "reverse": 1.0,
+      "modadd": 0.994140625
+    },
+    "crossing_step_50": {
+      "addition": 14500,
+      "sort": 1250,
+      "reverse": 500,
+      "modadd": 3250
+    },
+    "crossing_step_90": {
+      "addition": null,
+      "sort": 3500,
+      "reverse": 1250,
+      "modadd": 9750
+    },
+    "final_grad_frac": {
+      "addition": 0.06418122153170407,
+      "sort": 0.0020587307661771776,
+      "reverse": 0.0006844393359497189,
+      "modadd": 0.0061026751510798935
+    },
+    "mean_grad_frac": {
+      "addition": 0.2600888911213677,
+      "sort": 0.03417535880109505,
+      "reverse": 0.028506892089887322,
+      "modadd": 0.1282197181549035
+    }
+  },
+  {
+    "run_name": "gated_k1_d64_L2_h4_bs128_lr0.0003_seed1",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 1,
+      "device": "cpu",
+      "log_dir": "runs/gated_seeds/gated_k1_d64_L2_h4_bs128_lr0.0003_seed1",
+      "compile_model": false,
+      "top_k": 1,
+      "gate_enabled": true
+    },
+    "n_params": 101504,
+    "gate_enabled": true,
+    "top_k": 1,
+    "final_acc": {
+      "addition": 0.869140625,
+      "sort": 0.99609375,
+      "reverse": 1.0,
+      "modadd": 0.99609375
+    },
+    "best_acc": {
+      "addition": 0.896484375,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.998046875
+    },
+    "crossing_step_50": {
+      "addition": 9500,
+      "sort": 1000,
+      "reverse": 500,
+      "modadd": 3750
+    },
+    "crossing_step_90": {
+      "addition": null,
+      "sort": 4000,
+      "reverse": 750,
+      "modadd": 12000
+    },
+    "final_grad_frac": {
+      "addition": 0.02906572357751429,
+      "sort": 0.0005201876480132342,
+      "reverse": 7.587954774498939e-05,
+      "modadd": 0.006182761304080487
+    },
+    "mean_grad_frac": {
+      "addition": 0.23958820030008338,
+      "sort": 0.031722409451616335,
+      "reverse": 0.028524561016411532,
+      "modadd": 0.14938266701359543
+    }
+  },
+  {
+    "run_name": "gated_k1_d64_L2_h4_bs128_lr0.0003_seed2",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 2,
+      "device": "cpu",
+      "log_dir": "runs/gated_seeds/gated_k1_d64_L2_h4_bs128_lr0.0003_seed2",
+      "compile_model": false,
+      "top_k": 1,
+      "gate_enabled": true
+    },
+    "n_params": 101504,
+    "gate_enabled": true,
+    "top_k": 1,
+    "final_acc": {
+      "addition": 0.88671875,
+      "sort": 0.994140625,
+      "reverse": 1.0,
+      "modadd": 0.9921875
+    },
+    "best_acc": {
+      "addition": 0.93359375,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.9921875
+    },
+    "crossing_step_50": {
+      "addition": 6500,
+      "sort": 750,
+      "reverse": 750,
+      "modadd": 2250
+    },
+    "crossing_step_90": {
+      "addition": 15750,
+      "sort": 3500,
+      "reverse": 1250,
+      "modadd": 8000
+    },
+    "final_grad_frac": {
+      "addition": 0.017029742838814855,
+      "sort": 0.00022469634003937245,
+      "reverse": 6.055464409291744e-05,
+      "modadd": 0.007794897574931383
+    },
+    "mean_grad_frac": {
+      "addition": 0.16895703298832299,
+      "sort": 0.03209508809291232,
+      "reverse": 0.02949638634567197,
+      "modadd": 0.11046422457655215
+    }
+  },
+  {
+    "run_name": "gated_k1_d64_L2_h4_bs128_lr0.0003_seed3",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 3,
+      "device": "cpu",
+      "log_dir": "runs/gated_seeds/gated_k1_d64_L2_h4_bs128_lr0.0003_seed3",
+      "compile_model": false,
+      "top_k": 1,
+      "gate_enabled": true
+    },
+    "n_params": 101504,
+    "gate_enabled": true,
+    "top_k": 1,
+    "final_acc": {
+      "addition": 0.9296875,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.966796875
+    },
+    "best_acc": {
+      "addition": 0.931640625,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.994140625
+    },
+    "crossing_step_50": {
+      "addition": 9000,
+      "sort": 1000,
+      "reverse": 500,
+      "modadd": 3250
+    },
+    "crossing_step_90": {
+      "addition": 15500,
+      "sort": 4000,
+      "reverse": 1000,
+      "modadd": 9000
+    },
+    "final_grad_frac": {
+      "addition": 0.01476949236355722,
+      "sort": 0.0005106678176671266,
+      "reverse": 2.150537632405758e-05,
+      "modadd": 0.007998226307332516
+    },
+    "mean_grad_frac": {
+      "addition": 0.21391904516305577,
+      "sort": 0.03514507297848736,
+      "reverse": 0.028390470958456922,
+      "modadd": 0.1288516054783138
+    }
+  }
+]

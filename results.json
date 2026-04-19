@@ -1,0 +1,102 @@
+{
+  "config": {
+    "mode": "both",
+    "max_steps": 300,
+    "seq_len": 256,
+    "mini_batch_size": 32,
+    "window_size": 256,
+    "d_model": 128,
+    "n_layers": 8,
+    "n_heads": 4,
+    "ff_mult": 4,
+    "n_ttt_blocks": 2,
+    "lr": 0.0003,
+    "inner_lr": 1.0,
+    "accum_steps": 8,
+    "seed": 0,
+    "log_interval": 25,
+    "eval_interval": 50,
+    "out": "results.json",
+    "max_chars": 2000000
+  },
+  "standard": {
+    "params": 1623040,
+    "log": [
+      {
+        "step": 0,
+        "eval_loss": 4.46546146273613,
+        "elapsed": 0.0
+      },
+      {
+        "step": 50,
+        "eval_loss": 2.774489179253578,
+        "elapsed": 6.3091418743133545
+      },
+      {
+        "step": 100,
+        "eval_loss": 2.5485030710697174,
+        "elapsed": 12.173830509185791
+      },
+      {
+        "step": 150,
+        "eval_loss": 2.4798132330179214,
+        "elapsed": 18.04032325744629
+      },
+      {
+        "step": 200,
+        "eval_loss": 2.439503788948059,
+        "elapsed": 23.86557102203369
+      },
+      {
+        "step": 250,
+        "eval_loss": 2.4071000814437866,
+        "elapsed": 29.659207344055176
+      },
+      {
+        "step": 300,
+        "eval_loss": 2.3823943436145782,
+        "elapsed": 35.46163201332092
+      }
+    ]
+  },
+  "ttt": {
+    "params": 1623040,
+    "log": [
+      {
+        "step": 0,
+        "eval_loss": 4.016801342368126,
+        "elapsed": 0.0
+      },
+      {
+        "step": 50,
+        "eval_loss": 2.738416939973831,
+        "elapsed": 57.93107032775879
+      },
+      {
+        "step": 100,
+        "eval_loss": 2.5319556295871735,
+        "elapsed": 114.50205159187317
+      },
+      {
+        "step": 150,
+        "eval_loss": 2.4634066969156265,
+        "elapsed": 171.20246505737305
+      },
+      {
+        "step": 200,
+        "eval_loss": 2.413566827774048,
+        "elapsed": 227.73947262763977
+      },
+      {
+        "step": 250,
+        "eval_loss": 2.38144651055336,
+        "elapsed": 284.4695534706116
+      },
+      {
+        "step": 300,
+        "eval_loss": 2.3532426357269287,
+        "elapsed": 341.4907703399658
+      }
+    ]
+  }
+}

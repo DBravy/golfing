@@ -1,0 +1,290 @@
+[
+  {
+    "run_name": "mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed0",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 0,
+      "device": "cpu",
+      "log_dir": "runs/memory_seeds/mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed0",
+      "compile_model": false,
+      "buffer_size": 1000,
+      "decay_factor": 0.99,
+      "gate_fresh": false
+    },
+    "n_params": 101504,
+    "buffer_capacity": 1000,
+    "decay_factor": 0.99,
+    "gate_fresh": false,
+    "final_acc": {
+      "addition": 0.630859375,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.94140625
+    },
+    "best_acc": {
+      "addition": 0.685546875,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.970703125
+    },
+    "crossing_step_50": {
+      "addition": 13250,
+      "sort": 750,
+      "reverse": 500,
+      "modadd": 4500
+    },
+    "crossing_step_90": {
+      "addition": null,
+      "sort": 1250,
+      "reverse": 500,
+      "modadd": 9500
+    },
+    "final_buffer_size": 50,
+    "final_buffer_task_frac": {
+      "addition": 0.8,
+      "sort": 0.0,
+      "reverse": 0.0,
+      "modadd": 0.2
+    },
+    "final_mean_priority": 0.6565286542114019
+  },
+  {
+    "run_name": "mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed1",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 1,
+      "device": "cpu",
+      "log_dir": "runs/memory_seeds/mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed1",
+      "compile_model": false,
+      "buffer_size": 1000,
+      "decay_factor": 0.99,
+      "gate_fresh": false
+    },
+    "n_params": 101504,
+    "buffer_capacity": 1000,
+    "decay_factor": 0.99,
+    "gate_fresh": false,
+    "final_acc": {
+      "addition": 0.88671875,
+      "sort": 0.998046875,
+      "reverse": 1.0,
+      "modadd": 0.998046875
+    },
+    "best_acc": {
+      "addition": 0.88671875,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.998046875
+    },
+    "crossing_step_50": {
+      "addition": 11750,
+      "sort": 750,
+      "reverse": 500,
+      "modadd": 4500
+    },
+    "crossing_step_90": {
+      "addition": null,
+      "sort": 1000,
+      "reverse": 500,
+      "modadd": 7750
+    },
+    "final_buffer_size": 12,
+    "final_buffer_task_frac": {
+      "addition": 0.9166666666666666,
+      "sort": 0.08333333333333333,
+      "reverse": 0.0,
+      "modadd": 0.0
+    },
+    "final_mean_priority": 1.101216268837452
+  },
+  {
+    "run_name": "mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed2",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 2,
+      "device": "cpu",
+      "log_dir": "runs/memory_seeds/mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed2",
+      "compile_model": false,
+      "buffer_size": 1000,
+      "decay_factor": 0.99,
+      "gate_fresh": false
+    },
+    "n_params": 101504,
+    "buffer_capacity": 1000,
+    "decay_factor": 0.99,
+    "gate_fresh": false,
+    "final_acc": {
+      "addition": 0.087890625,
+      "sort": 0.998046875,
+      "reverse": 1.0,
+      "modadd": 1.0
+    },
+    "best_acc": {
+      "addition": 0.087890625,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 1.0
+    },
+    "crossing_step_50": {
+      "addition": null,
+      "sort": 750,
+      "reverse": 750,
+      "modadd": 5250
+    },
+    "crossing_step_90": {
+      "addition": null,
+      "sort": 1250,
+      "reverse": 750,
+      "modadd": 7500
+    },
+    "final_buffer_size": 996,
+    "final_buffer_task_frac": {
+      "addition": 1.0,
+      "sort": 0.0,
+      "reverse": 0.0,
+      "modadd": 0.0
+    },
+    "final_mean_priority": 2.04771904786062
+  },
+  {
+    "run_name": "mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed3",
+    "config": {
+      "n_layers": 2,
+      "d_model": 64,
+      "n_heads": 4,
+      "d_ff_mult": 4,
+      "dropout": 0.0,
+      "batch_size": 128,
+      "lr": 0.0003,
+      "weight_decay": 0.01,
+      "total_steps": 20000,
+      "warmup_steps": 500,
+      "grad_clip": 1.0,
+      "eval_every": 250,
+      "eval_batch_size": 256,
+      "n_eval_problems": 512,
+      "task_mix": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "mod_p": 97,
+      "seq_len_sort": 5,
+      "seq_len_reverse": 5,
+      "add_digits": 3,
+      "seed": 3,
+      "device": "cpu",
+      "log_dir": "runs/memory_seeds/mem_b1000_dec0.99_d64_L2_h4_bs128_lr0.0003_seed3",
+      "compile_model": false,
+      "buffer_size": 1000,
+      "decay_factor": 0.99,
+      "gate_fresh": false
+    },
+    "n_params": 101504,
+    "buffer_capacity": 1000,
+    "decay_factor": 0.99,
+    "gate_fresh": false,
+    "final_acc": {
+      "addition": 0.1171875,
+      "sort": 0.998046875,
+      "reverse": 1.0,
+      "modadd": 0.982421875
+    },
+    "best_acc": {
+      "addition": 0.138671875,
+      "sort": 1.0,
+      "reverse": 1.0,
+      "modadd": 0.986328125
+    },
+    "crossing_step_50": {
+      "addition": null,
+      "sort": 750,
+      "reverse": 500,
+      "modadd": 7250
+    },
+    "crossing_step_90": {
+      "addition": null,
+      "sort": 1000,
+      "reverse": 500,
+      "modadd": 14750
+    },
+    "final_buffer_size": 998,
+    "final_buffer_task_frac": {
+      "addition": 0.9979959919839679,
+      "sort": 0.0,
+      "reverse": 0.0,
+      "modadd": 0.002004008016032064
+    },
+    "final_mean_priority": 2.0511501655874884
+  }
+]
