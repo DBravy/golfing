@@ -275,3 +275,171 @@ def standard_forward_and_loss(model, tokens):
     logits = model(tokens[:, :-1])
     targets = tokens[:, 1:]
     return F.cross_entropy(logits.reshape(-1, V), targets.reshape(-1))
+
+
+def snapshot_fast_params(fast_params_list):
+    """Deep copy of a fast-params state, detached and ready to use as leaves."""
+    return [
+        {name: p.detach().clone().requires_grad_(True) for name, p in fp.items()}
+        for fp in fast_params_list
+    ]
+
+
+def get_non_fast_parameters(model):
+    """Return model parameters EXCLUDING the fast MLP weights in TTT blocks."""
+    fast_ids = set()
+    for block in model.blocks:
+        if getattr(block, "is_ttt", False):
+            for p in block.mlp_fast.parameters():
+                fast_ids.add(id(p))
+    return [p for p in model.parameters() if id(p) not in fast_ids]
+
+
+@torch.enable_grad()
+def persistent_ttt_forward_and_loss(
+    model, tokens, mini_batch_size, inner_lr, fast_params_state,
+    inner_weight_decay=0.0,
+):
+    """
+    Fast-weight-programmer variant: the fast MLP weights PERSIST across sequences.
+
+    Differences from vanilla TTT-E2E (ttt_forward_and_loss):
+      - No gradient of gradients. Inner loop uses create_graph=False.
+      - Fast params are leaves in the outer graph (detached after each inner step).
+      - The returned loss is differentiable w.r.t. all OTHER model parameters
+        (attention, slow MLPs, norms, embeddings), but NOT w.r.t. the fast params.
+      - The caller carries fast_params_state forward across calls, so adaptation
+        from one sequence's inner loop carries into the next sequence's starting
+        point rather than being discarded.
+
+    Args:
+        fast_params_state: list of dicts, one per TTT block. Leaf tensors with
+            requires_grad=True. Produced by snapshot_fast_params() or the return
+            value of a previous call.
+        inner_weight_decay: optional multiplicative decay applied to fast params
+            at each inner step. Defaults to 0 (no decay). Set > 0 to prevent the
+            persistent state from drifting to large values over long training.
+
+    Returns:
+        (mean_loss, updated_fast_params_state)
+        updated_fast_params_state is detached leaf tensors suitable for the
+        next call.
+    """
+    B, T = tokens.shape
+    V = model.vocab_size
+
+    n_mini = (T - 1) // mini_batch_size
+    assert n_mini > 0, f"Need at least one mini-batch (T-1={T-1}, b={mini_batch_size})"
+
+    fast_params_list = fast_params_state
+
+    total_loss = 0.0
+    total_tokens = 0
+
+    for i in range(n_mini):
+        pred_start = i * mini_batch_size + 1
+        pred_end = (i + 1) * mini_batch_size + 1
+        context_end = pred_end
+
+        logits = model(tokens[:, :context_end], fast_params_list=fast_params_list)
+        batch_logits = logits[:, pred_start - 1:pred_end - 1]
+        batch_targets = tokens[:, pred_start:pred_end]
+
+        sum_loss = F.cross_entropy(
+            batch_logits.reshape(-1, V),
+            batch_targets.reshape(-1),
+            reduction="sum",
+        )
+        total_loss = total_loss + sum_loss
+        total_tokens += B * mini_batch_size
+
+        if i < n_mini - 1:
+            all_fast = [p for fp in fast_params_list for p in fp.values()]
+            # retain_graph=True because sum_loss's subgraph is part of total_loss
+            # which we still need to backward() on later.
+            grads = torch.autograd.grad(
+                sum_loss, all_fast,
+                create_graph=False,
+                retain_graph=True,
+            )
+            scale = inner_lr / (B * mini_batch_size)
+            idx = 0
+            new_list = []
+            for fp in fast_params_list:
+                new_fp = {}
+                for name, p in fp.items():
+                    updated = p * (1.0 - inner_weight_decay) - scale * grads[idx]
+                    # Detach so the next iteration treats it as a leaf, and the
+                    # persistent state does not hold onto the graph across calls.
+                    new_fp[name] = updated.detach().requires_grad_(True)
+                    idx += 1
+                new_list.append(new_fp)
+            fast_params_list = new_list
+
+    mean_loss = total_loss / total_tokens
+
+    # Final detached snapshot for persistence to the next call
+    final_state = [
+        {name: p.detach().clone().requires_grad_(True) for name, p in fp.items()}
+        for fp in fast_params_list
+    ]
+    return mean_loss, final_state
+
+
+@torch.no_grad()
+def persistent_eval_loss(
+    model, tokens, mini_batch_size, inner_lr, fast_params_state,
+    per_sequence_reset=True,
+):
+    """
+    Eval loss for the persistent variant.
+
+    If per_sequence_reset=True (default, matches TTT eval), we start from the
+    given fast_params_state, run the inner loop on the eval sequence, and the
+    caller is expected to reset to the snapshot before the next eval sequence.
+    We do NOT modify fast_params_state here; we snapshot it internally.
+
+    Inner updates during eval use first-order gradients only.
+    """
+    # We need grad for the inner loop, so break out of no_grad locally.
+    with torch.enable_grad():
+        local_state = snapshot_fast_params(fast_params_state)
+        B, T = tokens.shape
+        V = model.vocab_size
+        n_mini = (T - 1) // mini_batch_size
+
+        total_loss = 0.0
+        total_tokens = 0
+
+        for i in range(n_mini):
+            pred_start = i * mini_batch_size + 1
+            pred_end = (i + 1) * mini_batch_size + 1
+            context_end = pred_end
+
+            logits = model(tokens[:, :context_end], fast_params_list=local_state)
+            batch_logits = logits[:, pred_start - 1:pred_end - 1]
+            batch_targets = tokens[:, pred_start:pred_end]
+
+            sum_loss = F.cross_entropy(
+                batch_logits.reshape(-1, V),
+                batch_targets.reshape(-1),
+                reduction="sum",
+            )
+            total_loss = total_loss + float(sum_loss.detach())
+            total_tokens += B * mini_batch_size
+
+            if i < n_mini - 1:
+                all_fast = [p for fp in local_state for p in fp.values()]
+                grads = torch.autograd.grad(sum_loss, all_fast, create_graph=False)
+                scale = inner_lr / (B * mini_batch_size)
+                idx = 0
+                new_list = []
+                for fp in local_state:
+                    new_fp = {}
+                    for name, p in fp.items():
+                        new_fp[name] = (p - scale * grads[idx]).detach().requires_grad_(True)
+                        idx += 1
+                    new_list.append(new_fp)
+                local_state = new_list
+
+    return total_loss / total_tokens

@@ -29,6 +29,10 @@ from ttt_model import (
     TTTTransformer,
     ttt_forward_and_loss,
     standard_forward_and_loss,
+    persistent_ttt_forward_and_loss,
+    persistent_eval_loss,
+    snapshot_fast_params,
+    get_non_fast_parameters,
 )
 
 
@@ -111,7 +115,7 @@ class SeqDataset(Dataset):
 def run_one(mode, config, tokenizer, train_tokens, eval_tokens, device):
     set_seed(config["seed"])
 
-    n_ttt_blocks = config["n_ttt_blocks"] if mode == "ttt" else 0
+    n_ttt_blocks = config["n_ttt_blocks"] if mode in ("ttt", "persistent") else 0
     model = TTTTransformer(
         vocab_size=tokenizer.vocab_size,
         d_model=config["d_model"],
@@ -126,21 +130,45 @@ def run_one(mode, config, tokenizer, train_tokens, eval_tokens, device):
     n_params = model.num_params()
     print(f"[{mode}] {n_params:,} parameters")
 
+    # For persistent mode, fast params are updated by the inner loop only; exclude
+    # them from the outer optimizer so AdamW's weight decay and momentum do not
+    # fight the inner SGD.
+    if mode == "persistent":
+        opt_params = get_non_fast_parameters(model)
+        print(f"[{mode}] optimizer sees {sum(p.numel() for p in opt_params):,} of "
+              f"{n_params:,} params (fast MLPs excluded)")
+    else:
+        opt_params = list(model.parameters())
+
     optim = torch.optim.AdamW(
-        model.parameters(),
+        opt_params,
         lr=config["lr"],
         betas=(0.9, 0.95),
         weight_decay=0.01,
     )
+
+    # Persistent fast params state, if applicable. A separate inner_lr is used
+    # because per-step magnitudes differ from bi-level TTT (these updates
+    # accumulate rather than get thrown away).
+    persistent_state = None
+    if mode == "persistent":
+        persistent_state = snapshot_fast_params(model.get_initial_fast_params())
 
     train_ds = SeqDataset(train_tokens, config["seq_len"])
     eval_ds = SeqDataset(eval_tokens, config["seq_len"])
     train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, drop_last=True)
 
     def eval_model(max_batches=16):
+        nonlocal persistent_state
         model.eval()
         losses = []
         eval_loader = DataLoader(eval_ds, batch_size=1, shuffle=False)
+        # For persistent mode: snapshot pre-eval state so eval adaptation does
+        # not leak into training. Each eval sequence also starts from this
+        # snapshot (per-sequence reset, matching TTT eval).
+        pre_eval_snapshot = None
+        if mode == "persistent":
+            pre_eval_snapshot = snapshot_fast_params(persistent_state)
         for j, batch in enumerate(eval_loader):
             if j >= max_batches:
                 break
@@ -151,11 +179,25 @@ def run_one(mode, config, tokenizer, train_tokens, eval_tokens, device):
                     config["mini_batch_size"], config["inner_lr"],
                     create_graph=False,
                 )
+                losses.append(float(loss.detach()))
+            elif mode == "persistent":
+                el = persistent_eval_loss(
+                    model, batch,
+                    config["mini_batch_size"],
+                    config.get("persistent_inner_lr", config["inner_lr"]),
+                    pre_eval_snapshot,
+                )
+                losses.append(el)
             else:
                 with torch.no_grad():
                     loss = standard_forward_and_loss(model, batch)
-            losses.append(float(loss.detach()))
+                losses.append(float(loss.detach()))
         model.train()
+        # Restore persistent state to its pre-eval snapshot (we never mutated
+        # persistent_state during eval, since persistent_eval_loss snapshots
+        # internally, but we re-snapshot to be explicit).
+        if mode == "persistent":
+            persistent_state = pre_eval_snapshot
         return sum(losses) / len(losses)
 
     model.train()
@@ -185,11 +227,19 @@ def run_one(mode, config, tokenizer, train_tokens, eval_tokens, device):
                     config["mini_batch_size"], config["inner_lr"],
                     create_graph=True,
                 )
+            elif mode == "persistent":
+                loss, persistent_state = persistent_ttt_forward_and_loss(
+                    model, batch,
+                    config["mini_batch_size"],
+                    config.get("persistent_inner_lr", config["inner_lr"]),
+                    persistent_state,
+                    inner_weight_decay=config.get("persistent_inner_wd", 0.0),
+                )
             else:
                 loss = standard_forward_and_loss(model, batch)
             (loss / config["accum_steps"]).backward()
             accum += float(loss.detach()) / config["accum_steps"]
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        torch.nn.utils.clip_grad_norm_(opt_params, 1.0)
         optim.step()
         step += 1
         running.append(accum)
@@ -197,7 +247,11 @@ def run_one(mode, config, tokenizer, train_tokens, eval_tokens, device):
         if step % config["log_interval"] == 0:
             avg = sum(running) / len(running)
             elapsed = time.time() - t0
-            print(f"[{mode}] step {step:5d} train {avg:.4f} elapsed {elapsed:.1f}s")
+            extra = ""
+            if mode == "persistent":
+                norm = sum(p.norm().item() for fp in persistent_state for p in fp.values())
+                extra = f" fast_norm {norm:.2f}"
+            print(f"[{mode}] step {step:5d} train {avg:.4f} elapsed {elapsed:.1f}s{extra}")
             running = []
 
         if step % config["eval_interval"] == 0 or step == config["max_steps"]:
@@ -219,7 +273,7 @@ def make_plot(results, modes, out_path):
         return
 
     fig, ax = plt.subplots(1, 2, figsize=(11, 4))
-    colors = {"standard": "tab:orange", "ttt": "tab:blue"}
+    colors = {"standard": "tab:orange", "ttt": "tab:blue", "persistent": "tab:green"}
     for mode in modes:
         log = results[mode]["log"]
         steps = [e["step"] for e in log]
@@ -245,7 +299,7 @@ def make_plot(results, modes, out_path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["standard", "ttt", "both"], default="both")
+    ap.add_argument("--mode", choices=["standard", "ttt", "persistent", "all"], default="all")
     ap.add_argument("--max_steps", type=int, default=300)
     ap.add_argument("--seq_len", type=int, default=256)
     ap.add_argument("--mini_batch_size", type=int, default=32)
@@ -256,7 +310,14 @@ def main():
     ap.add_argument("--ff_mult", type=int, default=4)
     ap.add_argument("--n_ttt_blocks", type=int, default=2)
     ap.add_argument("--lr", type=float, default=3e-4)
-    ap.add_argument("--inner_lr", type=float, default=1.0)
+    ap.add_argument("--inner_lr", type=float, default=1.0,
+                    help="Inner-loop SGD lr for TTT (bi-level) mode.")
+    ap.add_argument("--persistent_inner_lr", type=float, default=0.1,
+                    help="Inner-loop SGD lr for persistent mode. Smaller because "
+                         "updates accumulate across sequences rather than being reset.")
+    ap.add_argument("--persistent_inner_wd", type=float, default=0.0,
+                    help="Optional weight decay for the persistent fast params' "
+                         "inner SGD update. 0 = off.")
     ap.add_argument("--accum_steps", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--log_interval", type=int, default=25)
@@ -283,11 +344,10 @@ def main():
     config = vars(args)
     results = {"config": config}
 
-    modes = []
-    if args.mode in ("standard", "both"):
-        modes.append("standard")
-    if args.mode in ("ttt", "both"):
-        modes.append("ttt")
+    if args.mode == "all":
+        modes = ["standard", "ttt", "persistent"]
+    else:
+        modes = [args.mode]
 
     for mode in modes:
         print(f"\n=== Training: {mode} ===")
@@ -306,7 +366,7 @@ def main():
         final = log[-1]
         start = log[0]["eval_loss"]
         print(
-            f"[{mode}] eval NLL: {start:.4f} -> {final['eval_loss']:.4f}  "
+            f"[{mode:11s}] eval NLL: {start:.4f} -> {final['eval_loss']:.4f}  "
             f"({final['step']} steps, {final['elapsed']:.1f}s)"
         )
 
