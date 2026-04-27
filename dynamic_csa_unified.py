@@ -56,7 +56,8 @@ class UnifiedAttentionConfig:
     n_csa: int = 1024                 # bounded lookback for CSA (in tokens)
     max_phrase_len: int = 16          # Lmax; longer phrases truncated
     # Sliding window
-    n_win: int = 128                  # W
+    n_win: int = 128                  # W (only used when sw_mode == "fixed")
+    sw_mode: str = "fixed"            # "fixed" = banded causal, "phrase" = same-phrase causal
     # Misc
     use_attn_sink: bool = True
     rope_base: float = 10_000.0
@@ -275,12 +276,15 @@ class UnifiedHybridAttention(nn.Module):
     def forward(self, h: torch.Tensor,
                 phrase_mask: torch.Tensor,
                 phrase_token_idx: torch.Tensor,
-                phrase_end_pos: torch.Tensor) -> torch.Tensor:
+                phrase_end_pos: torch.Tensor,
+                phrase_id: torch.Tensor) -> torch.Tensor:
         """
         h:                (B, T, D) pre-normed input
         phrase_mask:      (B, P, Lmax) bool
         phrase_token_idx: (B, P, Lmax) long
         phrase_end_pos:   (B, P) long; -1 for padding phrases
+        phrase_id:        (B, T) long; phrase index each token belongs to.
+                          Used only when cfg.sw_mode == "phrase".
 
         Returns:          (B, T, D)
         """
@@ -345,10 +349,19 @@ class UnifiedHybridAttention(nn.Module):
 
         # SW logits: (B, H, T, T) -> (B, T, H, T) for concat compatibility.
         sw_logits = torch.einsum("bthc,bshc->bhts", q, sw_k) / math.sqrt(c)
-        i = positions.view(T, 1)
-        j = positions.view(1, T)
-        sw_mask = (j <= i) & (j > i - cfg.n_win)                 # (T, T)
-        sw_logits = sw_logits.masked_fill(~sw_mask.view(1, 1, T, T),
+
+        # SW mask construction. Output shape: (B, T, T).
+        i = positions.view(1, T, 1)
+        j = positions.view(1, 1, T)
+        causal = (j <= i)
+        if cfg.sw_mode == "phrase":
+            same_phrase = (phrase_id.unsqueeze(2) == phrase_id.unsqueeze(1))
+            sw_mask = same_phrase & causal                       # (B, T, T)
+        else:  # "fixed"
+            band = (j > i - cfg.n_win)
+            sw_mask = (causal & band).expand(B, -1, -1)          # (B, T, T)
+
+        sw_logits = sw_logits.masked_fill(~sw_mask.unsqueeze(1),
                                           float("-inf"))
         sw_logits = sw_logits.permute(0, 2, 1, 3)                # (B, T, H, T)
 
@@ -364,7 +377,7 @@ class UnifiedHybridAttention(nn.Module):
 
         # If a query has no valid keys at all, zero its row to avoid NaNs.
         any_valid = torch.cat(
-            [slot_valid, sw_mask.view(1, T, T).expand(B, T, T)],
+            [slot_valid, sw_mask],
             dim=-1
         ).any(dim=-1, keepdim=True).unsqueeze(2)                 # (B, T, 1, 1)
         attn = torch.where(any_valid, attn, torch.zeros_like(attn))
@@ -396,8 +409,10 @@ class UnifiedHybridAttentionBlock(nn.Module):
     def forward(self, x: torch.Tensor,
                 phrase_mask: torch.Tensor,
                 phrase_token_idx: torch.Tensor,
-                phrase_end_pos: torch.Tensor) -> torch.Tensor:
-        return self.attn(self.norm(x), phrase_mask, phrase_token_idx, phrase_end_pos)
+                phrase_end_pos: torch.Tensor,
+                phrase_id: torch.Tensor) -> torch.Tensor:
+        return self.attn(self.norm(x), phrase_mask, phrase_token_idx,
+                         phrase_end_pos, phrase_id)
 
 
 # -------------------------------------------------------------------------
@@ -415,6 +430,7 @@ def pack_phrases(phrase_spans_per_seq: List[List[Tuple[int, int]]],
     mask = torch.zeros(B, P, Lmax, dtype=torch.bool, device=device)
     tok_idx = torch.zeros(B, P, Lmax, dtype=torch.long, device=device)
     end_pos = torch.full((B, P), -1, dtype=torch.long, device=device)
+    phrase_id = torch.zeros(B, seq_len, dtype=torch.long, device=device)
 
     for b, spans in enumerate(phrase_spans_per_seq):
         for p, (s, e) in enumerate(spans):
@@ -425,7 +441,8 @@ def pack_phrases(phrase_spans_per_seq: List[List[Tuple[int, int]]],
             mask[b, p, :length] = True
             tok_idx[b, p, :length] = torch.arange(s, e_trunc, device=device)
             end_pos[b, p] = e_trunc - 1
-    return mask, tok_idx, end_pos
+            phrase_id[b, s:e_trunc] = p
+    return mask, tok_idx, end_pos, phrase_id
 
 
 # -------------------------------------------------------------------------
@@ -483,9 +500,9 @@ if __name__ == "__main__":
 
     spans_per_seq = [[(s, min(s + 3, T)) for s in range(0, T, 3)]
                      for _ in range(B)]
-    mask, tok_idx, end_pos = pack_phrases(spans_per_seq, T,
-                                          cfg.max_phrase_len, x.device)
-    out = block(x, mask, tok_idx, end_pos)
+    mask, tok_idx, end_pos, pid = pack_phrases(spans_per_seq, T,
+                                               cfg.max_phrase_len, x.device)
+    out = block(x, mask, tok_idx, end_pos, pid)
 
     print("output shape:", tuple(out.shape))
     print("output mean/std:", round(out.mean().item(), 4),
@@ -494,12 +511,23 @@ if __name__ == "__main__":
     # Causality check.
     x2 = x.clone()
     x2[:, T - 1, :] += 1.0
-    out2 = block(x2, mask, tok_idx, end_pos)
+    out2 = block(x2, mask, tok_idx, end_pos, pid)
     diff = (out - out2).abs().max(dim=-1).values
     print("max diff at last token (should be > 0):",
           round(diff[:, -1].max().item(), 4))
     print("max diff over first half (should be 0):",
           round(diff[:, : T // 2].max().item(), 4))
+
+    # Phrase-bounded SW sanity check.
+    cfg_phrase = UnifiedAttentionConfig(
+        d_model=128, n_query_heads=4, head_dim=32,
+        query_compress_dim=64, top_k=8, n_csa=64,
+        n_indexer_heads=2, indexer_head_dim=32,
+        max_phrase_len=8, n_win=16, sw_mode="phrase",
+    )
+    block_phrase = UnifiedHybridAttentionBlock(cfg_phrase)
+    out_phrase = block_phrase(x, mask, tok_idx, end_pos, pid)
+    print("phrase-mode output shape:", tuple(out_phrase.shape))
 
     # Parameter counts at the prototype config and at the recommended target.
     print("\nParameter breakdown at smoke-test config (D=128, H=4, c=32):")

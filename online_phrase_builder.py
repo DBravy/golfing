@@ -170,7 +170,7 @@ def pack_phrases_from_is_end(is_end: torch.Tensor,
                              max_phrase_len: int,
                              pad_token_id: int,
                              input_ids: torch.Tensor
-                             ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                             ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     B, T = is_end.shape
     device = is_end.device
 
@@ -207,7 +207,7 @@ def pack_phrases_from_is_end(is_end: torch.Tensor,
         dim=1, index=phrase_id, src=end_src, reduce="amax", include_self=True,
     )
 
-    return phrase_mask, phrase_token_idx, phrase_end_pos
+    return phrase_mask, phrase_token_idx, phrase_end_pos, phrase_id
 
 
 # -------------------------------------------------------------------------
@@ -354,7 +354,7 @@ if __name__ == "__main__":
     #   pos 7 (!)
     # plus forced last_real at pos 7 (already a boundary).
     seq = torch.tensor([[4, 5, 6, 2, 7, 6, 10, 8]])
-    pm, pti, pep = builder(seq)
+    pm, pti, pep, pid = builder(seq)
     valid_ends = sorted(set(x for x in pep[0].tolist() if x >= 0))
     print(f"SP end-to-end: end_pos={valid_ends}")
     assert valid_ends == [2, 3, 6, 7], f"got {valid_ends}"

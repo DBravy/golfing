@@ -125,6 +125,9 @@ def main():
 
     ap.add_argument("--chunker", choices=["online", "fixed"], default="online")
     ap.add_argument("--fixed-stride", type=int, default=4)
+    ap.add_argument("--sw-mode", choices=["fixed", "phrase"], default="fixed",
+                    help="Sliding window mask: 'fixed' = banded causal of n_win tokens; "
+                         "'phrase' = same-phrase causal (no cross-phrase raw attention).")
 
     args = ap.parse_args()
 
@@ -152,6 +155,7 @@ def main():
     print(f"Validation tokens: {val_tokens.numel():,}")
 
     model_cfg = ModelConfig(vocab_size=vocab_size)
+    model_cfg.sw_mode = args.sw_mode
     if args.config_overrides:
         overrides = json.loads(args.config_overrides)
         for k, v in overrides.items():
@@ -287,6 +291,7 @@ def main():
                 "tokenizer": args.tokenizer,
                 "chunker": args.chunker,
                 "fixed_stride": args.fixed_stride,
+                "sw_mode": args.sw_mode,
             }, ckpt_path)
             log({"step": step, "event": "checkpoint", "path": str(ckpt_path)})
 
