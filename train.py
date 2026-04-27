@@ -1,22 +1,24 @@
 """
-Training loop for HybridTransformerLM on TinyStories with online phrase building.
+Training loop for HybridTransformerLM on TinyStories.
 
 Designed for a single T4 (16 GB). Uses fp16 AMP (T4 has no bf16).
 
-Phrase boundaries are computed inside the model from input_ids. The dataset
-just stores tokenized text. The --chunker flag selects between sentence-aware
-(OnlinePhraseBuilder) and fixed-stride (FixedStridePhraseBuilder) ablation
-baselines.
+Tokenization happens at startup. The tokenized dataset is cached to disk so
+subsequent runs are fast. No separate preprocessing step needed.
 
 Usage:
+    # First run on this (tokenizer, max_len, max_stories) tokenizes + caches.
+    # Subsequent runs reuse the cache.
     python train.py --steps 5000 --batch-size 8 --max-len 384 --lr 3e-4 \
         --chunker online --log-file run_online.jsonl
 
+    # Fixed-stride ablation. Same data, different chunker.
     python train.py --steps 5000 --batch-size 8 --max-len 384 --lr 3e-4 \
         --chunker fixed --fixed-stride 4 --log-file run_fixed.jsonl
 
-The training script ignores the `phrase_spans` field in cached data files,
-so existing prepare_data.py outputs work without modification.
+    # Debug run: small dataset, few steps.
+    python train.py --steps 100 --batch-size 4 --max-len 256 \
+        --max-train-stories 1000 --max-val-stories 200
 """
 
 from __future__ import annotations
@@ -28,50 +30,11 @@ import time
 from pathlib import Path
 
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 from model import ModelConfig, HybridTransformerLM
 from online_phrase_builder import OnlinePhraseBuilder, FixedStridePhraseBuilder
-
-
-# -------------------------------------------------------------------------
-# Dataset and collator
-# -------------------------------------------------------------------------
-
-class TokenIdsDataset(Dataset):
-    """
-    Loads cached token ids from prepare_data.py output. The phrase_spans
-    field is ignored.
-    """
-    def __init__(self, path: str):
-        blob = torch.load(path, weights_only=False)
-        self.input_ids = blob["input_ids"]
-        self.tokenizer_name = blob["tokenizer_name"]
-
-    def __len__(self):
-        return len(self.input_ids)
-
-    def __getitem__(self, idx):
-        return {"input_ids": self.input_ids[idx]}
-
-
-class TokenIdsCollator:
-    """Pads input_ids to the batch max (clipped at max_len)."""
-    def __init__(self, pad_token_id: int, max_len: int):
-        self.pad_token_id = pad_token_id
-        self.max_len = max_len
-
-    def __call__(self, batch):
-        T = min(self.max_len, max(len(b["input_ids"]) for b in batch))
-        B = len(batch)
-        input_ids = torch.full((B, T), self.pad_token_id, dtype=torch.long)
-        labels = torch.full((B, T), -100, dtype=torch.long)
-        for i, b in enumerate(batch):
-            ids = b["input_ids"][:T]
-            L = ids.numel()
-            input_ids[i, :L] = ids
-            labels[i, :L] = ids
-        return {"input_ids": input_ids, "labels": labels}
+from dataset import build_tinystories_dataset, TokenIdsCollator
 
 
 # -------------------------------------------------------------------------
@@ -114,13 +77,24 @@ def evaluate(model, loader, device, max_batches: int = 50):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", default="./data")
+    # Data
+    ap.add_argument("--tokenizer", default="gpt2")
+    ap.add_argument("--cache-dir", default="./tokenized_cache",
+                    help="Directory to cache tokenized data. "
+                         "Set to empty string to disable caching.")
+    ap.add_argument("--max-train-stories", type=int, default=None,
+                    help="Cap train set size (None = use the full corpus).")
+    ap.add_argument("--max-val-stories", type=int, default=2000,
+                    help="Cap validation set size.")
+    ap.add_argument("--max-len", type=int, default=384,
+                    help="Max sequence length (truncation + batch cap).")
+
+    # Training
     ap.add_argument("--ckpt-dir", default="./checkpoints")
     ap.add_argument("--log-file", default=None)
     ap.add_argument("--steps", type=int, default=5000)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--accum-steps", type=int, default=1)
-    ap.add_argument("--max-len", type=int, default=384)
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--warmup", type=int, default=200)
     ap.add_argument("--weight-decay", type=float, default=0.1)
@@ -131,10 +105,11 @@ def main():
     ap.add_argument("--num-workers", type=int, default=2)
     ap.add_argument("--config-overrides", type=str, default=None,
                     help="JSON dict of ModelConfig fields to override.")
-    ap.add_argument("--chunker", choices=["online", "fixed"], default="online",
-                    help="Phrase builder type.")
+
+    # Chunker
+    ap.add_argument("--chunker", choices=["online", "fixed"], default="online")
     ap.add_argument("--fixed-stride", type=int, default=4,
-                    help="Stride for the fixed builder (used when --chunker=fixed).")
+                    help="Stride for the fixed builder (--chunker=fixed).")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
@@ -143,20 +118,30 @@ def main():
     if device.type == "cuda":
         print(f"GPU:    {torch.cuda.get_device_name(0)}")
 
-    train_path = Path(args.data_dir) / "train.pt"
-    val_path = Path(args.data_dir) / "validation.pt"
-    print(f"Loading {train_path}")
-    train_ds = TokenIdsDataset(str(train_path))
-    print(f"Loading {val_path}")
-    val_ds = TokenIdsDataset(str(val_path))
-    print(f"  train: {len(train_ds):,}  val: {len(val_ds):,}")
-
+    # Tokenizer.
     from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(train_ds.tokenizer_name)
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     pad_id = tokenizer.pad_token_id
 
+    # Datasets (tokenizes on first call, caches to disk).
+    cache_dir = args.cache_dir if args.cache_dir else None
+    train_ds = build_tinystories_dataset(
+        "train", tokenizer, args.max_len,
+        cache_dir=cache_dir,
+        max_stories=args.max_train_stories,
+        tokenizer_name=args.tokenizer,
+    )
+    val_ds = build_tinystories_dataset(
+        "validation", tokenizer, args.max_len,
+        cache_dir=cache_dir,
+        max_stories=args.max_val_stories,
+        tokenizer_name=args.tokenizer,
+    )
+    print(f"\ntrain: {len(train_ds):,}  val: {len(val_ds):,}")
+
+    # Model config.
     model_cfg = ModelConfig(vocab_size=tokenizer.vocab_size)
     if args.config_overrides:
         overrides = json.loads(args.config_overrides)
@@ -164,7 +149,7 @@ def main():
             setattr(model_cfg, k, v)
     print(f"\nModel config: {model_cfg}")
 
-    # Build the phrase builder.
+    # Phrase builder.
     if args.chunker == "online":
         phrase_builder = OnlinePhraseBuilder(
             tokenizer=tokenizer,
@@ -189,6 +174,7 @@ def main():
     print(f"Non-embedding params: {n_params:,}")
     print(f"Total params:         {n_total:,}")
 
+    # Loaders.
     collator = TokenIdsCollator(pad_id, args.max_len)
     train_loader = DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
@@ -201,6 +187,7 @@ def main():
         pin_memory=(device.type == "cuda"),
     )
 
+    # Optimizer with split decay.
     no_decay_substrings = {"bias", "B_pos", "sink_logits"}
     decay_params = []
     nodecay_params = []
