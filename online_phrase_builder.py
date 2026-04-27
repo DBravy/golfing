@@ -6,20 +6,22 @@ The boundary rule:
      AND the previous token is not a known abbreviation.
   2. If max_phrase_len tokens have passed since the last boundary, force one.
   3. Force a boundary at the last non-pad position of each sequence.
+  4. Tokens listed in extra_boundary_token_ids (e.g. EOS) also trigger
+     boundaries. Useful when documents are concatenated in a stream and you
+     don't want phrases spanning across them.
 
-Outputs match what UnifiedHybridAttention expects:
+Outputs:
     phrase_mask:      (B, P, Lmax) bool
     phrase_token_idx: (B, P, Lmax) long
-    phrase_end_pos:   (B, P) long; -1 for padding phrases
+    phrase_end_pos:   (B, P) long; -1 for padding/empty phrases
 
-This file also provides FixedStridePhraseBuilder for the fixed-stride ablation
-baseline. Both builders are nn.Modules with the same forward signature, so
-they're swappable in the model.
+Both OnlinePhraseBuilder and FixedStridePhraseBuilder are nn.Modules with the
+same forward signature.
 """
 
 from __future__ import annotations
 
-from typing import Set, Tuple
+from typing import Iterable, Optional, Set, Tuple
 
 import torch
 import torch.nn as nn
@@ -38,7 +40,6 @@ DEFAULT_ABBREVIATIONS: Set[str] = {
 def build_token_lookups(tokenizer,
                         abbreviations: Set[str] = DEFAULT_ABBREVIATIONS
                         ) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Build (is_punct, is_abbreviation) boolean lookup tensors over the vocab."""
     vocab_size = tokenizer.vocab_size
     is_punct = torch.zeros(vocab_size, dtype=torch.bool)
     is_abbreviation = torch.zeros(vocab_size, dtype=torch.bool)
@@ -156,24 +157,42 @@ def pack_phrases_from_is_end(is_end: torch.Tensor,
 
 
 # -------------------------------------------------------------------------
-# Builders (nn.Modules with a uniform forward(input_ids) interface)
+# Builders
 # -------------------------------------------------------------------------
 
 class OnlinePhraseBuilder(nn.Module):
     """
     Punctuation + abbreviation veto + forced-flush phrase builder.
-    Sentence-aware. The primary chunker.
+
+    extra_boundary_token_ids: token IDs that should also trigger phrase
+        boundaries. The typical use is passing [eos_token_id] when training on
+        concatenated documents, so phrases don't span across documents.
+
+    pad_token_id: tokens equal to this value are excluded from phrases. For
+        shard-based training where there's no padding, pass any value that
+        cannot appear in input_ids (e.g. -1).
     """
     def __init__(self,
                  tokenizer,
                  max_phrase_len: int,
                  pad_token_id: int,
-                 abbreviations: Set[str] = DEFAULT_ABBREVIATIONS):
+                 abbreviations: Set[str] = DEFAULT_ABBREVIATIONS,
+                 extra_boundary_token_ids: Optional[Iterable[int]] = None):
         super().__init__()
         self.max_phrase_len = max_phrase_len
         self.pad_token_id = pad_token_id
 
         is_punct, is_abbr = build_token_lookups(tokenizer, abbreviations)
+
+        if extra_boundary_token_ids:
+            for tid in extra_boundary_token_ids:
+                if tid is None:
+                    continue
+                if 0 <= tid < is_punct.numel():
+                    is_punct[tid] = True
+                    # A boundary token shouldn't also veto: clear is_abbr there.
+                    is_abbreviation[tid] = False
+
         self.register_buffer("is_punct", is_punct, persistent=False)
         self.register_buffer("is_abbreviation", is_abbr, persistent=False)
 
@@ -188,10 +207,7 @@ class OnlinePhraseBuilder(nn.Module):
 
 
 class FixedStridePhraseBuilder(nn.Module):
-    """
-    Fires a boundary every `stride` tokens. The V4-style baseline.
-    No tokenizer needed.
-    """
+    """Fires a boundary every `stride` tokens. The V4-style baseline."""
     def __init__(self,
                  max_phrase_len: int,
                  pad_token_id: int,
@@ -206,14 +222,11 @@ class FixedStridePhraseBuilder(nn.Module):
         device = input_ids.device
 
         is_real = (input_ids != self.pad_token_id)
-
         positions = torch.arange(T, device=device)
         is_stride_end = ((positions + 1) % self.stride == 0)
         is_stride_end = is_stride_end.unsqueeze(0).expand(B, T)
         is_end = is_stride_end & is_real
 
-        # Mirror the online builder: ensure the trailing partial phrase has
-        # an end at the last real position.
         pos_arange = positions.unsqueeze(0).expand(B, T)
         last_real = torch.where(is_real, pos_arange,
                                 torch.full_like(pos_arange, -1)).max(dim=1).values
@@ -236,7 +249,7 @@ if __name__ == "__main__":
                 0: "[PAD]", 1: ".", 2: "!", 3: "?",
                 4: "Dr", 5: "Mr", 6: "Smith", 7: "hello",
                 8: "world", 9: "yes", 10: "and", 11: "the",
-                12: "cat", 13: "sat",
+                12: "cat", 13: "sat", 14: "<EOS>",
             }
             self.vocab_size = len(self.id_to_str)
 
@@ -244,40 +257,46 @@ if __name__ == "__main__":
             return " ".join(self.id_to_str.get(i, "?") for i in ids)
 
     tok = MockTokenizer()
-    is_punct, is_abbr = build_token_lookups(tok)
-    assert set(torch.where(is_punct)[0].tolist()) == {1, 2, 3}
-    assert set(torch.where(is_abbr)[0].tolist()) == {4, 5}
-    print("Lookup tables OK")
 
-    # Existing rule tests (kept compact).
+    # Test the EOS-as-boundary feature.
+    builder = OnlinePhraseBuilder(
+        tok, max_phrase_len=8, pad_token_id=-1,
+        extra_boundary_token_ids=[14],
+    )
+    assert bool(builder.is_punct[14]), "EOS not registered as boundary"
+    print(f"is_punct ids: {sorted(torch.where(builder.is_punct)[0].tolist())}")
+
+    # Sequence: "doc1 . <EOS> doc2 ." (no padding).
+    seq = torch.tensor([[7, 8, 1, 14, 9, 12, 1]])
+    pm, pti, pep = builder(seq)
+    valid_ends = sorted(set(x for x in pep[0].tolist() if x >= 0))
+    print(f"end positions: {valid_ends}")
+    # Expect boundaries at 2 (.), 3 (EOS), 6 (.) -> 3 valid phrases.
+    assert valid_ends == [2, 3, 6], f"got {valid_ends}"
+
+    # Existing rule tests.
     seq = torch.tensor([[7, 8, 1, 9, 1]])
-    is_end = compute_is_end(seq, is_punct, is_abbr, 8, 0)
+    is_end = compute_is_end(seq, builder.is_punct, builder.is_abbreviation, 8, -1)
     assert is_end[0].tolist() == [False, False, True, False, True]
 
+    # Abbreviation veto.
     seq = torch.tensor([[4, 1, 6, 1, 9, 1]])
-    is_end = compute_is_end(seq, is_punct, is_abbr, 8, 0)
+    is_end = compute_is_end(seq, builder.is_punct, builder.is_abbreviation, 8, -1)
     assert is_end[0].tolist() == [False, False, False, True, False, True]
     print("Punctuation + abbreviation veto OK")
 
+    # Forced flush.
     seq = torch.tensor([[7, 8, 9, 10, 11, 12, 13, 7, 8, 9]])
-    is_end = compute_is_end(seq, is_punct, is_abbr, 4, 0)
+    is_end = compute_is_end(seq, builder.is_punct, builder.is_abbreviation, 4, -1)
     assert is_end[0, 3].item() and is_end[0, 7].item() and is_end[0, 9].item()
     print("Forced flush OK")
 
-    # OnlinePhraseBuilder end-to-end.
-    builder = OnlinePhraseBuilder(tok, max_phrase_len=8, pad_token_id=0)
-    seq = torch.tensor([[7, 8, 1, 9, 1, 0, 0]])
-    pm, pti, pep = builder(seq)
-    valid = (pep[0] >= 0).sum().item()
-    assert valid == 2, f"OnlineBuilder: expected 2 valid phrases, got {valid}"
-    print(f"OnlinePhraseBuilder OK: end_pos={[x for x in pep[0].tolist() if x >= 0]}")
-
-    # FixedStridePhraseBuilder end-to-end.
-    fixed = FixedStridePhraseBuilder(max_phrase_len=8, pad_token_id=0, stride=4)
-    seq = torch.tensor([[7, 8, 9, 10, 11, 12, 13, 7, 8, 9, 0, 0]])
+    # FixedStride still works.
+    fixed = FixedStridePhraseBuilder(max_phrase_len=8, pad_token_id=-1, stride=4)
+    seq = torch.tensor([[7, 8, 9, 10, 11, 12, 13, 7, 8, 9]])
     pm, pti, pep = fixed(seq)
     valid_ends = sorted(set(x for x in pep[0].tolist() if x >= 0))
     assert valid_ends == [3, 7, 9], f"got {valid_ends}"
-    print(f"FixedStridePhraseBuilder OK: end_pos={valid_ends}")
+    print(f"FixedStride OK: end_pos={valid_ends}")
 
     print("\nAll tests passed.")

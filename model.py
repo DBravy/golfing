@@ -2,8 +2,9 @@
 Small Transformer LM using UnifiedHybridAttention.
 
 Phrase boundaries are computed inside the model via a phrase_builder module
-passed at construction time. This makes input_ids the only sequence-level
-input the forward pass needs.
+passed at construction time. forward(input_ids, labels) takes already-shifted
+labels (caller responsibility), matching the (x, y) pattern from the shard
+loader. Pass labels=None for inference.
 """
 
 from __future__ import annotations
@@ -91,13 +92,6 @@ class TransformerBlock(nn.Module):
 
 class HybridTransformerLM(nn.Module):
     def __init__(self, cfg: ModelConfig, phrase_builder: nn.Module):
-        """
-        Args:
-            cfg: model config.
-            phrase_builder: nn.Module with forward(input_ids) -> (mask, idx, end_pos).
-                Either OnlinePhraseBuilder or FixedStridePhraseBuilder, both
-                from online_phrase_builder.py.
-        """
         super().__init__()
         self.cfg = cfg
         self.phrase_builder = phrase_builder
@@ -121,9 +115,10 @@ class HybridTransformerLM(nn.Module):
                 labels: Optional[torch.Tensor] = None):
         """
         input_ids: (B, T)
-        labels:    (B, T) optional; if provided returns (logits, loss)
+        labels:    (B, T) optional, already shifted by the caller (labels[t]
+                   is the target prediction for input_ids[t]). If provided,
+                   returns (logits, loss); otherwise (logits, None).
         """
-        # Compute phrase boundaries once for the whole stack.
         phrase_mask, phrase_token_idx, phrase_end_pos = self.phrase_builder(input_ids)
 
         x = self.embed(input_ids)
@@ -138,11 +133,9 @@ class HybridTransformerLM(nn.Module):
 
         loss = None
         if labels is not None:
-            shift_logits = logits[:, :-1, :].contiguous()
-            shift_labels = labels[:, 1:].contiguous()
             loss = F.cross_entropy(
-                shift_logits.view(-1, shift_logits.size(-1)),
-                shift_labels.view(-1),
+                logits.view(-1, logits.size(-1)),
+                labels.view(-1),
                 ignore_index=-100,
             )
         return logits, loss
@@ -153,9 +146,6 @@ class HybridTransformerLM(nn.Module):
             n -= self.embed.weight.numel()
             if self.lm_head is not None:
                 n -= self.lm_head.weight.numel()
-        # Phrase builder buffers (is_punct, is_abbreviation) are non-persistent
-        # and shouldn't count, but they're already excluded since they're
-        # buffers not parameters.
         return n
 
 
@@ -172,25 +162,23 @@ if __name__ == "__main__":
         n_indexer_heads=2, indexer_head_dim=32,
         top_k=8, n_csa=64, max_phrase_len=8, n_win=16,
     )
-
     builder = FixedStridePhraseBuilder(
-        max_phrase_len=cfg.max_phrase_len,
-        pad_token_id=0,
-        stride=4,
+        max_phrase_len=cfg.max_phrase_len, pad_token_id=-1, stride=4,
     )
     model = HybridTransformerLM(cfg, builder)
 
     print(f"non-embedding params: {model.num_parameters(True):,}")
     print(f"total params:         {model.num_parameters(False):,}")
-
-    print("\nattention params per layer:")
+    print(f"\nattention params per layer:")
     for k, v in count_attention_params(cfg.to_attn_config()).items():
         if k == "TOTAL":
             print(f"  {k:<28s} {v:>10,d}")
 
     B, T = 2, 64
-    input_ids = torch.randint(1, cfg.vocab_size, (B, T))  # avoid pad id 0
-    logits, loss = model(input_ids, labels=input_ids)
+    chunk = torch.randint(0, cfg.vocab_size, (B, T + 1))
+    x = chunk[:, :-1]
+    y = chunk[:, 1:]
+    logits, loss = model(x, labels=y)
     print(f"\nlogits shape: {tuple(logits.shape)}")
     print(f"loss:         {loss.item():.4f}")
     loss.backward()
