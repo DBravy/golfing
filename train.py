@@ -1,13 +1,22 @@
 """
-Training loop for HybridTransformerLM on TinyStories with cached phrase spans.
+Training loop for HybridTransformerLM on TinyStories with online phrase building.
 
-Designed for a single T4 (16 GB). Uses fp16 AMP because T4 has no bf16.
+Designed for a single T4 (16 GB). Uses fp16 AMP (T4 has no bf16).
 
-Usage (after prepare_data.py has run):
-    python train.py --steps 5000 --batch-size 8 --max-len 384 --lr 3e-4
+Phrase boundaries are computed inside the model from input_ids. The dataset
+just stores tokenized text. The --chunker flag selects between sentence-aware
+(OnlinePhraseBuilder) and fixed-stride (FixedStridePhraseBuilder) ablation
+baselines.
 
-The script logs to stdout and optionally to a JSONL file. Checkpoints land in
-./checkpoints/.
+Usage:
+    python train.py --steps 5000 --batch-size 8 --max-len 384 --lr 3e-4 \
+        --chunker online --log-file run_online.jsonl
+
+    python train.py --steps 5000 --batch-size 8 --max-len 384 --lr 3e-4 \
+        --chunker fixed --fixed-stride 4 --log-file run_fixed.jsonl
+
+The training script ignores the `phrase_spans` field in cached data files,
+so existing prepare_data.py outputs work without modification.
 """
 
 from __future__ import annotations
@@ -19,85 +28,50 @@ import time
 from pathlib import Path
 
 import torch
-import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 from model import ModelConfig, HybridTransformerLM
-from dynamic_csa_unified import pack_phrases
+from online_phrase_builder import OnlinePhraseBuilder, FixedStridePhraseBuilder
 
 
 # -------------------------------------------------------------------------
 # Dataset and collator
 # -------------------------------------------------------------------------
 
-class PreChunkedDataset(Dataset):
-    """Loads the dict produced by prepare_data.py."""
+class TokenIdsDataset(Dataset):
+    """
+    Loads cached token ids from prepare_data.py output. The phrase_spans
+    field is ignored.
+    """
     def __init__(self, path: str):
         blob = torch.load(path, weights_only=False)
         self.input_ids = blob["input_ids"]
-        self.phrase_spans = blob["phrase_spans"]
-        self.max_phrase_len = blob["max_phrase_len"]
         self.tokenizer_name = blob["tokenizer_name"]
 
     def __len__(self):
         return len(self.input_ids)
 
     def __getitem__(self, idx):
-        return {
-            "input_ids": self.input_ids[idx],
-            "phrase_spans": self.phrase_spans[idx],
-        }
+        return {"input_ids": self.input_ids[idx]}
 
 
-class Collator:
-    """
-    Pads input_ids to the batch max (clipped at max_len), builds the packed
-    phrase tensors, and clips spans that fall past the batch's effective T.
-    """
-    def __init__(self, pad_token_id: int, max_len: int, max_phrase_len: int):
+class TokenIdsCollator:
+    """Pads input_ids to the batch max (clipped at max_len)."""
+    def __init__(self, pad_token_id: int, max_len: int):
         self.pad_token_id = pad_token_id
         self.max_len = max_len
-        self.max_phrase_len = max_phrase_len
 
     def __call__(self, batch):
-        # Determine T for this batch.
         T = min(self.max_len, max(len(b["input_ids"]) for b in batch))
-
         B = len(batch)
         input_ids = torch.full((B, T), self.pad_token_id, dtype=torch.long)
         labels = torch.full((B, T), -100, dtype=torch.long)
-        spans_per_seq = []
-
         for i, b in enumerate(batch):
             ids = b["input_ids"][:T]
             L = ids.numel()
             input_ids[i, :L] = ids
             labels[i, :L] = ids
-            # Clip and filter spans to fit in T.
-            clipped = []
-            for s, e in b["phrase_spans"]:
-                if s >= T:
-                    break
-                e = min(e, T)
-                if e > s:
-                    clipped.append((s, e))
-            if not clipped:
-                # Ensure pack_phrases gets at least one valid span, even if
-                # the whole sequence is empty (degenerate case).
-                clipped = [(0, min(1, L))] if L > 0 else [(0, 0)]
-            spans_per_seq.append(clipped)
-
-        phrase_mask, phrase_token_idx, phrase_end_pos = pack_phrases(
-            spans_per_seq, T, self.max_phrase_len, device=torch.device("cpu")
-        )
-
-        return {
-            "input_ids": input_ids,
-            "labels": labels,
-            "phrase_mask": phrase_mask,
-            "phrase_token_idx": phrase_token_idx,
-            "phrase_end_pos": phrase_end_pos,
-        }
+        return {"input_ids": input_ids, "labels": labels}
 
 
 # -------------------------------------------------------------------------
@@ -126,13 +100,7 @@ def evaluate(model, loader, device, max_batches: int = 50):
             break
         batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
         with torch.cuda.amp.autocast(dtype=torch.float16):
-            _, loss = model(
-                batch["input_ids"],
-                batch["phrase_mask"],
-                batch["phrase_token_idx"],
-                batch["phrase_end_pos"],
-                labels=batch["labels"],
-            )
+            _, loss = model(batch["input_ids"], labels=batch["labels"])
         n = (batch["labels"] != -100).sum().item()
         total_loss += loss.item() * n
         total_tokens += n
@@ -163,6 +131,10 @@ def main():
     ap.add_argument("--num-workers", type=int, default=2)
     ap.add_argument("--config-overrides", type=str, default=None,
                     help="JSON dict of ModelConfig fields to override.")
+    ap.add_argument("--chunker", choices=["online", "fixed"], default="online",
+                    help="Phrase builder type.")
+    ap.add_argument("--fixed-stride", type=int, default=4,
+                    help="Stride for the fixed builder (used when --chunker=fixed).")
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
@@ -171,42 +143,53 @@ def main():
     if device.type == "cuda":
         print(f"GPU:    {torch.cuda.get_device_name(0)}")
 
-    # Load datasets.
     train_path = Path(args.data_dir) / "train.pt"
     val_path = Path(args.data_dir) / "validation.pt"
     print(f"Loading {train_path}")
-    train_ds = PreChunkedDataset(str(train_path))
+    train_ds = TokenIdsDataset(str(train_path))
     print(f"Loading {val_path}")
-    val_ds = PreChunkedDataset(str(val_path))
+    val_ds = TokenIdsDataset(str(val_path))
     print(f"  train: {len(train_ds):,}  val: {len(val_ds):,}")
 
-    # Get vocab size and pad token from the tokenizer used for prep.
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained(train_ds.tokenizer_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     pad_id = tokenizer.pad_token_id
 
-    # Build model config.
-    model_cfg = ModelConfig(
-        vocab_size=tokenizer.vocab_size,
-        max_phrase_len=train_ds.max_phrase_len,
-    )
+    model_cfg = ModelConfig(vocab_size=tokenizer.vocab_size)
     if args.config_overrides:
         overrides = json.loads(args.config_overrides)
         for k, v in overrides.items():
             setattr(model_cfg, k, v)
-
     print(f"\nModel config: {model_cfg}")
 
-    model = HybridTransformerLM(model_cfg).to(device)
+    # Build the phrase builder.
+    if args.chunker == "online":
+        phrase_builder = OnlinePhraseBuilder(
+            tokenizer=tokenizer,
+            max_phrase_len=model_cfg.max_phrase_len,
+            pad_token_id=pad_id,
+        )
+        n_punct = int(phrase_builder.is_punct.sum().item())
+        n_abbr = int(phrase_builder.is_abbreviation.sum().item())
+        print(f"OnlinePhraseBuilder: {n_punct} punctuation tokens, "
+              f"{n_abbr} abbreviation tokens")
+    else:
+        phrase_builder = FixedStridePhraseBuilder(
+            max_phrase_len=model_cfg.max_phrase_len,
+            pad_token_id=pad_id,
+            stride=args.fixed_stride,
+        )
+        print(f"FixedStridePhraseBuilder: stride={phrase_builder.stride}")
+
+    model = HybridTransformerLM(model_cfg, phrase_builder).to(device)
     n_params = model.num_parameters(exclude_embeddings=True)
     n_total = model.num_parameters(exclude_embeddings=False)
     print(f"Non-embedding params: {n_params:,}")
     print(f"Total params:         {n_total:,}")
 
-    # Collator and loaders.
-    collator = Collator(pad_id, args.max_len, model_cfg.max_phrase_len)
+    collator = TokenIdsCollator(pad_id, args.max_len)
     train_loader = DataLoader(
         train_ds, batch_size=args.batch_size, shuffle=True,
         collate_fn=collator, num_workers=args.num_workers, drop_last=True,
@@ -218,14 +201,16 @@ def main():
         pin_memory=(device.type == "cuda"),
     )
 
-    # Optimizer.
-    no_decay = {"bias", "B_pos", "sink_logits"}
-    decay_params = [p for n, p in model.named_parameters()
-                    if p.requires_grad and not any(k in n for k in no_decay)
-                    and "norm" not in n.lower()]
-    nodecay_params = [p for n, p in model.named_parameters()
-                      if p.requires_grad and (any(k in n for k in no_decay)
-                                              or "norm" in n.lower())]
+    no_decay_substrings = {"bias", "B_pos", "sink_logits"}
+    decay_params = []
+    nodecay_params = []
+    for name, p in model.named_parameters():
+        if not p.requires_grad:
+            continue
+        is_nodecay = (any(k in name for k in no_decay_substrings)
+                      or "norm" in name.lower())
+        (nodecay_params if is_nodecay else decay_params).append(p)
+
     optim = torch.optim.AdamW(
         [{"params": decay_params, "weight_decay": args.weight_decay},
          {"params": nodecay_params, "weight_decay": 0.0}],
@@ -233,7 +218,6 @@ def main():
     )
     scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
 
-    # Logging setup.
     log_fp = open(args.log_file, "w") if args.log_file else None
     def log(record: dict):
         line = json.dumps(record)
@@ -244,7 +228,6 @@ def main():
 
     Path(args.ckpt_dir).mkdir(parents=True, exist_ok=True)
 
-    # Training loop.
     model.train()
     step = 0
     train_iter = iter(train_loader)
@@ -257,6 +240,7 @@ def main():
     while step < args.steps:
         optim.zero_grad(set_to_none=True)
         accum_loss = 0.0
+        skip_step = False
 
         for _ in range(args.accum_steps):
             try:
@@ -268,34 +252,27 @@ def main():
             batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
 
             with torch.cuda.amp.autocast(dtype=torch.float16):
-                _, loss = model(
-                    batch["input_ids"],
-                    batch["phrase_mask"],
-                    batch["phrase_token_idx"],
-                    batch["phrase_end_pos"],
-                    labels=batch["labels"],
-                )
+                _, loss = model(batch["input_ids"], labels=batch["labels"])
                 loss = loss / args.accum_steps
 
             if not torch.isfinite(loss):
                 log({"step": step, "event": "non_finite_loss",
                      "loss": float(loss.item())})
                 optim.zero_grad(set_to_none=True)
+                skip_step = True
                 break
 
             scaler.scale(loss).backward()
             accum_loss += loss.item()
 
-        if not torch.isfinite(torch.tensor(accum_loss)):
+        if skip_step:
             step += 1
             continue
 
-        # LR step.
         lr = get_lr(step, args.steps, args.lr, args.warmup)
         for pg in optim.param_groups:
             pg["lr"] = lr
 
-        # Grad clip + step.
         scaler.unscale_(optim)
         gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         scaler.step(optim)
@@ -304,7 +281,6 @@ def main():
         loss_accum += accum_loss
         step += 1
 
-        # Periodic logging.
         if step % 20 == 0:
             now = time.time()
             avg_loss = loss_accum / 20
@@ -317,14 +293,12 @@ def main():
             loss_accum = 0.0
             t_last = now
 
-        # Eval.
         if step % args.eval_every == 0:
             val_loss = evaluate(model, val_loader, device)
             log({"step": step, "event": "eval",
                  "val_loss": round(val_loss, 4),
                  "val_ppl": round(math.exp(val_loss), 2)})
 
-        # Checkpoint.
         if step % args.ckpt_every == 0:
             ckpt_path = Path(args.ckpt_dir) / f"step_{step}.pt"
             torch.save({
@@ -332,10 +306,11 @@ def main():
                 "model": model.state_dict(),
                 "optim": optim.state_dict(),
                 "config": vars(model_cfg),
+                "chunker": args.chunker,
+                "fixed_stride": args.fixed_stride,
             }, ckpt_path)
             log({"step": step, "event": "checkpoint", "path": str(ckpt_path)})
 
-    # Final eval.
     val_loss = evaluate(model, val_loader, device, max_batches=200)
     log({"step": step, "event": "final_eval",
          "val_loss": round(val_loss, 4),
