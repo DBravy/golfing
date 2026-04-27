@@ -41,6 +41,7 @@ class ModelConfig:
     n_csa: int = 256
     max_phrase_len: int = 16
     n_win: int = 64
+    sw_mode: str = "fixed"            # "fixed" or "phrase"
     use_attn_sink: bool = True
 
     dropout: float = 0.0
@@ -57,6 +58,7 @@ class ModelConfig:
             n_csa=self.n_csa,
             max_phrase_len=self.max_phrase_len,
             n_win=self.n_win,
+            sw_mode=self.sw_mode,
             use_attn_sink=self.use_attn_sink,
             dropout=self.dropout,
         )
@@ -83,8 +85,9 @@ class TransformerBlock(nn.Module):
         self.ffn = FeedForward(cfg.d_model, cfg.ffn_mult, cfg.dropout)
         self.dropout = nn.Dropout(cfg.dropout)
 
-    def forward(self, x, phrase_mask, phrase_token_idx, phrase_end_pos):
-        a = self.attn(self.norm1(x), phrase_mask, phrase_token_idx, phrase_end_pos)
+    def forward(self, x, phrase_mask, phrase_token_idx, phrase_end_pos, phrase_id):
+        a = self.attn(self.norm1(x), phrase_mask, phrase_token_idx,
+                      phrase_end_pos, phrase_id)
         x = x + self.dropout(a)
         x = x + self.dropout(self.ffn(self.norm2(x)))
         return x
@@ -119,11 +122,11 @@ class HybridTransformerLM(nn.Module):
                    is the target prediction for input_ids[t]). If provided,
                    returns (logits, loss); otherwise (logits, None).
         """
-        phrase_mask, phrase_token_idx, phrase_end_pos = self.phrase_builder(input_ids)
+        phrase_mask, phrase_token_idx, phrase_end_pos, phrase_id = self.phrase_builder(input_ids)
 
         x = self.embed(input_ids)
         for block in self.blocks:
-            x = block(x, phrase_mask, phrase_token_idx, phrase_end_pos)
+            x = block(x, phrase_mask, phrase_token_idx, phrase_end_pos, phrase_id)
         x = self.final_norm(x)
 
         if self.lm_head is None:
