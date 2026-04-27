@@ -2,7 +2,7 @@
 import torch
 import sys
 sys.path.insert(0, "/home/claude/ttt_toy")
-from ttt_model import TTTTransformer, ttt_forward_and_loss, standard_forward_and_loss
+from ttt.ttt_model import TTTTransformer, ttt_forward_and_loss, standard_forward_and_loss
 
 torch.manual_seed(0)
 device = "cpu"

@@ -28,7 +28,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-from ttt_model import (
+from ttt.ttt_model import (
     TTTTransformer,
     ttt_forward_and_loss,
     standard_forward_and_loss,

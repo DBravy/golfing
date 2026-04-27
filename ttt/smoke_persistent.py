@@ -2,7 +2,7 @@
 import torch
 import sys
 sys.path.insert(0, "/home/claude/ttt_toy")
-from ttt_model import (
+from ttt.ttt_model import (
     TTTTransformer,
     persistent_ttt_forward_and_loss,
     persistent_eval_loss,

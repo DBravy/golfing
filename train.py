@@ -21,6 +21,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import time
@@ -99,40 +100,18 @@ def evaluate(model, val_tokens: torch.Tensor, seq_len: int, batch_size: int,
 # Main
 # -------------------------------------------------------------------------
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", default="./data/datasets/tinystories_gpt2")
-    ap.add_argument("--train-glob", default="*_train_*.bin")
-    ap.add_argument("--val-glob", default="*_validation_*.bin")
-    ap.add_argument("--tokenizer", default="gpt2",
-                    help="HF tokenizer name or path to .model SentencePiece file.")
+def run_trial(args, sw_mode: str, seed: int):
+    """Run a single training trial with the given sw_mode and seed."""
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
-    ap.add_argument("--seq-len", type=int, default=512)
-    ap.add_argument("--batch-size", type=int, default=8)
-    ap.add_argument("--accum-steps", type=int, default=1)
-
-    ap.add_argument("--steps", type=int, default=5000)
-    ap.add_argument("--lr", type=float, default=3e-4)
-    ap.add_argument("--warmup", type=int, default=200)
-    ap.add_argument("--weight-decay", type=float, default=0.1)
-    ap.add_argument("--grad-clip", type=float, default=1.0)
-    ap.add_argument("--eval-every", type=int, default=500)
-    ap.add_argument("--ckpt-every", type=int, default=2000)
-    ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--config-overrides", type=str, default=None)
-    ap.add_argument("--ckpt-dir", default="./checkpoints")
-    ap.add_argument("--log-file", default=None)
-
-    ap.add_argument("--chunker", choices=["online", "fixed"], default="online")
-    ap.add_argument("--fixed-stride", type=int, default=4)
-    ap.add_argument("--sw-mode", choices=["fixed", "phrase"], default="fixed",
-                    help="Sliding window mask: 'fixed' = banded causal of n_win tokens; "
-                         "'phrase' = same-phrase causal (no cross-phrase raw attention).")
-
-    args = ap.parse_args()
-
-    torch.manual_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    trial_tag = f"sw{sw_mode}_seed{seed}"
+    print(f"\n{'='*60}")
+    print(f"TRIAL: {trial_tag}  (sw_mode={sw_mode}, seed={seed})")
+    print(f"{'='*60}")
     print(f"Device: {device}")
     if device.type == "cuda":
         print(f"GPU:    {torch.cuda.get_device_name(0)}")
@@ -155,7 +134,7 @@ def main():
     print(f"Validation tokens: {val_tokens.numel():,}")
 
     model_cfg = ModelConfig(vocab_size=vocab_size)
-    model_cfg.sw_mode = args.sw_mode
+    model_cfg.sw_mode = sw_mode
     if args.config_overrides:
         overrides = json.loads(args.config_overrides)
         for k, v in overrides.items():
@@ -205,15 +184,24 @@ def main():
     )
     scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
 
-    log_fp = open(args.log_file, "w") if args.log_file else None
+    # Per-trial log file: derive from --log-file or auto-name
+    if args.log_file:
+        base = Path(args.log_file)
+        log_path = base.parent / f"{base.stem}_{trial_tag}{base.suffix}"
+    else:
+        log_path = None
+    log_fp = open(log_path, "w") if log_path else None
+
     def log(record: dict):
+        record = {"trial": trial_tag, **record}
         line = json.dumps(record)
         print(line)
         if log_fp:
             log_fp.write(line + "\n")
             log_fp.flush()
 
-    Path(args.ckpt_dir).mkdir(parents=True, exist_ok=True)
+    ckpt_dir = Path(args.ckpt_dir) / trial_tag
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     model.train()
     step = 0
@@ -282,7 +270,7 @@ def main():
                  "val_ppl": round(math.exp(val_loss), 2)})
 
         if step % args.ckpt_every == 0:
-            ckpt_path = Path(args.ckpt_dir) / f"step_{step}.pt"
+            ckpt_path = ckpt_dir / f"step_{step}.pt"
             torch.save({
                 "step": step,
                 "model": model.state_dict(),
@@ -291,7 +279,7 @@ def main():
                 "tokenizer": args.tokenizer,
                 "chunker": args.chunker,
                 "fixed_stride": args.fixed_stride,
-                "sw_mode": args.sw_mode,
+                "sw_mode": sw_mode,
             }, ckpt_path)
             log({"step": step, "event": "checkpoint", "path": str(ckpt_path)})
 
@@ -302,6 +290,65 @@ def main():
 
     if log_fp:
         log_fp.close()
+
+    return {"trial": trial_tag, "val_loss": round(val_loss, 4),
+            "val_ppl": round(math.exp(val_loss), 2)}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data-dir", default="./data/datasets/tinystories_gpt2")
+    ap.add_argument("--train-glob", default="*_train_*.bin")
+    ap.add_argument("--val-glob", default="*_validation_*.bin")
+    ap.add_argument("--tokenizer", default="gpt2",
+                    help="HF tokenizer name or path to .model SentencePiece file.")
+
+    ap.add_argument("--seq-len", type=int, default=512)
+    ap.add_argument("--batch-size", type=int, default=8)
+    ap.add_argument("--accum-steps", type=int, default=1)
+
+    ap.add_argument("--steps", type=int, default=5000)
+    ap.add_argument("--lr", type=float, default=3e-4)
+    ap.add_argument("--warmup", type=int, default=200)
+    ap.add_argument("--weight-decay", type=float, default=0.1)
+    ap.add_argument("--grad-clip", type=float, default=1.0)
+    ap.add_argument("--eval-every", type=int, default=500)
+    ap.add_argument("--ckpt-every", type=int, default=2000)
+    ap.add_argument("--seed", type=int, nargs="+", default=[0],
+                    help="One or more seeds for sweep trials.")
+    ap.add_argument("--config-overrides", type=str, default=None)
+    ap.add_argument("--ckpt-dir", default="./checkpoints")
+    ap.add_argument("--log-file", default=None)
+
+    ap.add_argument("--chunker", choices=["online", "fixed"], default="online")
+    ap.add_argument("--fixed-stride", type=int, default=4)
+    ap.add_argument("--sw-mode", nargs="+", default=["fixed"],
+                    help="One or more sliding window modes to sweep over. "
+                         "Choices: fixed, phrase.")
+
+    args = ap.parse_args()
+
+    # Validate sw-mode values
+    valid_sw = {"fixed", "phrase"}
+    for m in args.sw_mode:
+        if m not in valid_sw:
+            ap.error(f"invalid sw-mode '{m}': choose from {valid_sw}")
+
+    trials = list(itertools.product(args.sw_mode, args.seed))
+    print(f"Sweep: {len(trials)} trial(s)  "
+          f"sw_mode={args.sw_mode} x seed={args.seed}")
+
+    results = []
+    for i, (sw_mode, seed) in enumerate(trials, 1):
+        print(f"\n>>> Trial {i}/{len(trials)}: sw_mode={sw_mode}, seed={seed}")
+        result = run_trial(args, sw_mode, seed)
+        results.append(result)
+
+    print(f"\n{'='*60}")
+    print("SWEEP SUMMARY")
+    print(f"{'='*60}")
+    for r in results:
+        print(f"  {r['trial']:20s}  val_loss={r['val_loss']:.4f}  val_ppl={r['val_ppl']:.2f}")
 
 
 if __name__ == "__main__":
