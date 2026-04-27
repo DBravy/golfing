@@ -9,6 +9,10 @@ Format (matches modded-nanogpt / nanogpt-speedrun):
     [3:]: zeros (reserved)
   Body: num_tokens uint16 little-endian token IDs.
 
+Tokenization is streamed: we iterate the raw dataset in batches and write
+output shards as we go. There's no intermediate cache file, so disk usage
+during the run is just the output shards (about 2 bytes per token).
+
 The --tokenizer flag accepts:
   - A Hugging Face tokenizer name (e.g. "gpt2"), or
   - A path to a SentencePiece .model file.
@@ -16,11 +20,6 @@ The --tokenizer flag accepts:
 Vocabulary must fit in uint16 (<= 65535 tokens).
 
 Usage:
-    # GPT-2 BPE
-    python prepare_shards.py --dataset roneneldan/TinyStories --split train \\
-        --tokenizer gpt2 --out-dir ./data/datasets/tinystories_gpt2
-
-    # Custom SentencePiece BPE
     python prepare_shards.py --dataset roneneldan/TinyStories --split train \\
         --tokenizer ./data/tokenizers/tinystories_8192_bpe.model \\
         --out-dir ./data/datasets/tinystories_sp8192
@@ -57,11 +56,7 @@ def write_shard(path: Path, tokens: np.ndarray) -> None:
 
 def load_tokenizer(spec: str) -> Tuple[Callable[[List[str]], List[List[int]]],
                                        int, int]:
-    """
-    Returns (encode_batch, vocab_size, eos_id).
-
-    encode_batch: function from a list of strings to a list of token-id lists.
-    """
+    """Returns (encode_batch, vocab_size, eos_id)."""
     if spec.endswith(".model"):
         try:
             import sentencepiece as spm
@@ -74,7 +69,6 @@ def load_tokenizer(spec: str) -> Tuple[Callable[[List[str]], List[List[int]]],
         eos_id = int(sp.eos_id())
         if eos_id < 0:
             raise ValueError(f"SentencePiece model {spec} has no EOS token.")
-        # SP encode supports a list directly.
         def encode_batch(texts):
             return sp.encode(texts, out_type=int)
         return encode_batch, vocab_size, eos_id
@@ -99,6 +93,8 @@ def main():
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--out-prefix", default=None)
     ap.add_argument("--tokens-per-shard", type=int, default=10_000_000)
+    ap.add_argument("--batch-size", type=int, default=1024,
+                    help="Documents per tokenization batch (RAM only).")
     ap.add_argument("--max-stories", type=int, default=None)
     args = ap.parse_args()
 
@@ -116,46 +112,48 @@ def main():
     ds = load_dataset(args.dataset, split=args.split)
     if args.max_stories and len(ds) > args.max_stories:
         ds = ds.select(range(args.max_stories))
-    print(f"  {len(ds):,} documents")
-
-    print("Tokenizing...")
-    def tokenize_batch(batch):
-        return {"ids": encode_batch(batch["text"])}
-
-    tokenized = ds.map(
-        tokenize_batch, batched=True, batch_size=1024,
-        remove_columns=ds.column_names, desc="tokenizing",
-    )
+    n_docs = len(ds)
+    print(f"  {n_docs:,} documents")
 
     target = args.tokens_per_shard
+    # Buffer holds at most one shard's worth plus slack for the longest doc.
     buf = np.empty(target + 65536, dtype=np.uint16)
     buf_pos = 0
     shard_idx = 0
     total_tokens = 0
 
-    pbar = tqdm(tokenized, desc="writing")
-    for record in pbar:
-        ids = record["ids"]
-        n = len(ids) + 1
+    print("Tokenizing and writing shards (single pass)...")
+    pbar = tqdm(total=n_docs, desc="docs")
+    for i in range(0, n_docs, args.batch_size):
+        batch_end = min(i + args.batch_size, n_docs)
+        batch = ds[i:batch_end]
+        texts = batch["text"]
+        ids_batch = encode_batch(texts)
 
-        if buf_pos + n > buf.shape[0]:
-            grown = np.empty(buf_pos + n + 65536, dtype=np.uint16)
-            grown[:buf_pos] = buf[:buf_pos]
-            buf = grown
+        for ids in ids_batch:
+            n = len(ids) + 1  # +1 for EOS
 
-        if ids:
-            buf[buf_pos:buf_pos + len(ids)] = ids
-            buf_pos += len(ids)
-        buf[buf_pos] = eos_id
-        buf_pos += 1
-        total_tokens += n
+            if buf_pos + n > buf.shape[0]:
+                grown = np.empty(buf_pos + n + 65536, dtype=np.uint16)
+                grown[:buf_pos] = buf[:buf_pos]
+                buf = grown
 
-        if buf_pos >= target:
-            shard_path = out_dir / f"{prefix}_{args.split}_{shard_idx:06d}.bin"
-            write_shard(shard_path, buf[:buf_pos])
-            pbar.set_postfix({"shard": shard_idx, "tokens": f"{total_tokens:,}"})
-            shard_idx += 1
-            buf_pos = 0
+            if ids:
+                buf[buf_pos:buf_pos + len(ids)] = ids
+                buf_pos += len(ids)
+            buf[buf_pos] = eos_id
+            buf_pos += 1
+            total_tokens += n
+
+            if buf_pos >= target:
+                shard_path = out_dir / f"{prefix}_{args.split}_{shard_idx:06d}.bin"
+                write_shard(shard_path, buf[:buf_pos])
+                shard_idx += 1
+                buf_pos = 0
+
+        pbar.update(batch_end - i)
+        pbar.set_postfix({"shard": shard_idx, "tokens": f"{total_tokens:,}"})
+    pbar.close()
 
     if buf_pos > 0:
         shard_path = out_dir / f"{prefix}_{args.split}_{shard_idx:06d}.bin"
@@ -164,6 +162,8 @@ def main():
 
     print(f"\nWrote {shard_idx} shard(s), {total_tokens:,} tokens total.")
     print(f"Pattern: {out_dir}/{prefix}_{args.split}_*.bin")
+    on_disk_mb = total_tokens * 2 / 1e6
+    print(f"On-disk size: ~{on_disk_mb:.1f} MB")
 
 
 if __name__ == "__main__":
