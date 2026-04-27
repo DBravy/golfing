@@ -1,0 +1,646 @@
+device: cuda
+model: n_layer=4 n_embd=256 n_head=4 vocab=50257 block=128
+param count (incl. tied head): ~16.06M
+
+===== Condition: baseline (noise_mode=none) =====
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[data]      0/5000  loss=10.902  t=2.5s
+[data]    100/5000  loss=5.289  t=17.5s
+Token indices sequence length is longer than the specified maximum sequence length for this model (1106 > 1024). Running this sequence through the model will result in indexing errors
+[data]    200/5000  loss=4.547  t=33.0s
+[data]    300/5000  loss=3.952  t=49.2s
+[data]    400/5000  loss=4.208  t=65.2s
+[data]    500/5000  loss=3.632  t=80.7s
+[data]    600/5000  loss=3.509  t=96.0s
+[data]    700/5000  loss=3.450  t=111.6s
+[data]    800/5000  loss=3.388  t=127.4s
+[data]    900/5000  loss=3.633  t=143.2s
+[data]   1000/5000  loss=3.249  t=158.9s
+[data]   1100/5000  loss=3.638  t=174.5s
+[data]   1200/5000  loss=3.688  t=190.1s
+[data]   1300/5000  loss=3.402  t=205.8s
+[data]   1400/5000  loss=2.858  t=221.6s
+[data]   1500/5000  loss=3.013  t=237.3s
+[data]   1600/5000  loss=3.096  t=252.9s
+[data]   1700/5000  loss=2.904  t=268.6s
+[data]   1800/5000  loss=3.360  t=284.2s
+[data]   1900/5000  loss=3.430  t=299.9s
+[data]   2000/5000  loss=3.149  t=315.6s
+[data]   2100/5000  loss=2.635  t=331.4s
+[data]   2200/5000  loss=3.083  t=347.1s
+[data]   2300/5000  loss=3.012  t=362.8s
+[data]   2400/5000  loss=2.837  t=378.6s
+[data]   2500/5000  loss=3.073  t=394.3s
+[data]   2600/5000  loss=3.243  t=410.0s
+[data]   2700/5000  loss=3.261  t=425.7s
+[data]   2800/5000  loss=2.621  t=441.4s
+[data]   2900/5000  loss=3.121  t=457.0s
+[data]   3000/5000  loss=2.446  t=472.8s
+[data]   3100/5000  loss=2.438  t=488.5s
+[data]   3200/5000  loss=2.527  t=504.2s
+[data]   3300/5000  loss=3.079  t=519.9s
+[data]   3400/5000  loss=2.519  t=535.7s
+[data]   3500/5000  loss=2.872  t=551.4s
+[data]   3600/5000  loss=2.762  t=567.2s
+[data]   3700/5000  loss=2.861  t=582.9s
+[data]   3800/5000  loss=2.401  t=598.7s
+[data]   3900/5000  loss=2.486  t=614.5s
+[data]   4000/5000  loss=3.020  t=630.2s
+[data]   4100/5000  loss=2.429  t=646.0s
+[data]   4200/5000  loss=2.865  t=661.7s
+[data]   4300/5000  loss=2.904  t=677.4s
+[data]   4400/5000  loss=2.836  t=693.1s
+[data]   4500/5000  loss=2.353  t=708.8s
+[data]   4600/5000  loss=2.798  t=724.5s
+[data]   4700/5000  loss=2.924  t=740.3s
+[data]   4800/5000  loss=2.395  t=756.0s
+[data]   4900/5000  loss=2.427  t=771.8s
+
+[baseline] ECE=0.0259  mean_conf=0.491  top1_acc=0.466
+
+Reliability diagram [baseline]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     2528    0.052    0.061  +0.009
+  [0.07,0.13]    13911    0.104    0.109  +0.006
+  [0.13,0.20]    19261    0.167    0.163  -0.004
+  [0.20,0.27]    19661    0.233    0.224  -0.009
+  [0.27,0.33]    19373    0.299    0.286  -0.014
+  [0.33,0.40]    17445    0.366    0.347  -0.019
+  [0.40,0.47]    15514    0.433    0.400  -0.033
+  [0.47,0.53]    13723    0.499    0.467  -0.032
+  [0.53,0.60]    11808    0.566    0.523  -0.044
+  [0.60,0.67]     9801    0.632    0.578  -0.054
+  [0.67,0.73]     8691    0.699    0.653  -0.047
+  [0.73,0.80]     8000    0.766    0.720  -0.046
+  [0.80,0.87]     8146    0.833    0.786  -0.047
+  [0.87,0.93]     8906    0.901    0.846  -0.056
+  [0.93,1.00]    23936    0.979    0.955  -0.024
+===== Condition: token_noise (noise_mode=token) =====
+[tok_noise]     0/2000  loss=10.871  chance=10.825  t=0.1s
+[tok_noise]   100/2000  loss=10.869  chance=10.825  t=15.7s
+[tok_noise]   200/2000  loss=10.854  chance=10.825  t=31.6s
+[tok_noise]   300/2000  loss=10.853  chance=10.825  t=47.2s
+[tok_noise]   400/2000  loss=10.839  chance=10.825  t=62.5s
+[tok_noise]   500/2000  loss=10.837  chance=10.825  t=77.9s
+[tok_noise]   600/2000  loss=10.837  chance=10.825  t=93.5s
+[tok_noise]   700/2000  loss=10.834  chance=10.825  t=109.1s
+[tok_noise]   800/2000  loss=10.834  chance=10.825  t=124.5s
+[tok_noise]   900/2000  loss=10.834  chance=10.825  t=140.0s
+[tok_noise]  1000/2000  loss=10.831  chance=10.825  t=155.4s
+[tok_noise]  1100/2000  loss=10.835  chance=10.825  t=170.8s
+[tok_noise]  1200/2000  loss=10.834  chance=10.825  t=186.2s
+[tok_noise]  1300/2000  loss=10.832  chance=10.825  t=201.7s
+[tok_noise]  1400/2000  loss=10.829  chance=10.825  t=217.1s
+[tok_noise]  1500/2000  loss=10.826  chance=10.825  t=232.6s
+[tok_noise]  1600/2000  loss=10.830  chance=10.825  t=248.1s
+[tok_noise]  1700/2000  loss=10.830  chance=10.825  t=263.6s
+[tok_noise]  1800/2000  loss=10.828  chance=10.825  t=279.1s
+[tok_noise]  1900/2000  loss=10.829  chance=10.825  t=294.5s
+[data]      0/5000  loss=10.812  t=1.2s
+[data]    100/5000  loss=6.089  t=16.6s
+[data]    200/5000  loss=5.823  t=32.3s
+[data]    300/5000  loss=5.146  t=48.0s
+'timed out' thrown while requesting GET https://huggingface.co/datasets/roneneldan/TinyStories/resolve/f54c09fd23315a6f9c86f9dc80f725de7d8f9c64/data/train-00000-of-00004-2d5a1467fff1081b.parquet
+Retrying in 1s [Retry 1/5].
+[data]    400/5000  loss=5.112  t=63.6s
+[data]    500/5000  loss=4.410  t=79.2s
+[data]    600/5000  loss=4.200  t=94.8s
+[data]    700/5000  loss=4.123  t=110.5s
+[data]    800/5000  loss=4.053  t=126.2s
+[data]    900/5000  loss=4.416  t=141.9s
+[data]   1000/5000  loss=3.932  t=157.5s
+[data]   1100/5000  loss=4.255  t=173.2s
+[data]   1200/5000  loss=4.300  t=188.8s
+[data]   1300/5000  loss=4.017  t=204.5s
+[data]   1400/5000  loss=3.478  t=220.2s
+[data]   1500/5000  loss=3.589  t=235.9s
+[data]   1600/5000  loss=3.637  t=251.6s
+[data]   1700/5000  loss=3.418  t=267.3s
+[data]   1800/5000  loss=3.891  t=283.1s
+[data]   1900/5000  loss=3.959  t=298.8s
+[data]   2000/5000  loss=3.650  t=314.5s
+[data]   2100/5000  loss=3.181  t=330.2s
+[data]   2200/5000  loss=3.542  t=345.9s
+[data]   2300/5000  loss=3.426  t=361.5s
+[data]   2400/5000  loss=3.263  t=377.2s
+[data]   2500/5000  loss=3.477  t=393.0s
+[data]   2600/5000  loss=3.636  t=408.7s
+[data]   2700/5000  loss=3.684  t=424.4s
+[data]   2800/5000  loss=3.068  t=440.2s
+[data]   2900/5000  loss=3.474  t=455.9s
+[data]   3000/5000  loss=2.816  t=471.6s
+[data]   3100/5000  loss=2.849  t=487.3s
+[data]   3200/5000  loss=2.839  t=503.0s
+[data]   3300/5000  loss=3.396  t=518.8s
+[data]   3400/5000  loss=2.837  t=534.5s
+[data]   3500/5000  loss=3.163  t=550.3s
+[data]   3600/5000  loss=3.087  t=566.1s
+[data]   3700/5000  loss=3.165  t=581.9s
+[data]   3800/5000  loss=2.711  t=597.6s
+[data]   3900/5000  loss=2.810  t=613.4s
+[data]   4000/5000  loss=3.291  t=629.1s
+[data]   4100/5000  loss=2.715  t=644.8s
+[data]   4200/5000  loss=3.136  t=660.6s
+[data]   4300/5000  loss=3.170  t=676.3s
+[data]   4400/5000  loss=3.104  t=692.1s
+[data]   4500/5000  loss=2.655  t=707.9s
+[data]   4600/5000  loss=3.046  t=723.6s
+[data]   4700/5000  loss=3.189  t=739.5s
+[data]   4800/5000  loss=2.640  t=755.3s
+[data]   4900/5000  loss=2.678  t=771.1s
+
+[token_noise] ECE=0.0177  mean_conf=0.450  top1_acc=0.432
+
+Reliability diagram [token_noise]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     4506    0.050    0.052  +0.002
+  [0.07,0.13]    19206    0.102    0.102  -0.001
+  [0.13,0.20]    22184    0.167    0.168  +0.001
+  [0.20,0.27]    21720    0.233    0.225  -0.008
+  [0.27,0.33]    20107    0.299    0.291  -0.008
+  [0.33,0.40]    17720    0.366    0.346  -0.019
+  [0.40,0.47]    14776    0.432    0.418  -0.014
+  [0.47,0.53]    12266    0.499    0.472  -0.026
+  [0.53,0.60]    10292    0.566    0.533  -0.033
+  [0.60,0.67]     9109    0.633    0.602  -0.031
+  [0.67,0.73]     7536    0.699    0.667  -0.033
+  [0.73,0.80]     6810    0.766    0.726  -0.041
+  [0.80,0.87]     6616    0.833    0.790  -0.043
+  [0.87,0.93]     7396    0.901    0.855  -0.046
+  [0.93,1.00]    20460    0.980    0.954  -0.026
+
+===== Condition: emb_noise_std=0.02 (noise_mode=embedding) =====
+[emb_noise]     0/2000  loss=10.873  chance=10.825  std=0.020  t=0.2s
+[emb_noise]   100/2000  loss=10.878  chance=10.825  std=0.020  t=15.7s
+[emb_noise]   200/2000  loss=10.864  chance=10.825  std=0.020  t=31.2s
+[emb_noise]   300/2000  loss=10.846  chance=10.825  std=0.020  t=46.7s
+[emb_noise]   400/2000  loss=10.842  chance=10.825  std=0.020  t=62.1s
+[emb_noise]   500/2000  loss=10.830  chance=10.825  std=0.020  t=77.4s
+[emb_noise]   600/2000  loss=10.838  chance=10.825  std=0.020  t=92.8s
+[emb_noise]   700/2000  loss=10.834  chance=10.825  std=0.020  t=108.2s
+[emb_noise]   800/2000  loss=10.833  chance=10.825  std=0.020  t=123.5s
+[emb_noise]   900/2000  loss=10.832  chance=10.825  std=0.020  t=139.0s
+[emb_noise]  1000/2000  loss=10.828  chance=10.825  std=0.020  t=154.4s
+[emb_noise]  1100/2000  loss=10.831  chance=10.825  std=0.020  t=169.8s
+[emb_noise]  1200/2000  loss=10.836  chance=10.825  std=0.020  t=185.2s
+[emb_noise]  1300/2000  loss=10.833  chance=10.825  std=0.020  t=200.6s
+[emb_noise]  1400/2000  loss=10.831  chance=10.825  std=0.020  t=216.0s
+[emb_noise]  1500/2000  loss=10.829  chance=10.825  std=0.020  t=231.4s
+[emb_noise]  1600/2000  loss=10.829  chance=10.825  std=0.020  t=246.8s
+[emb_noise]  1700/2000  loss=10.828  chance=10.825  std=0.020  t=262.2s
+[emb_noise]  1800/2000  loss=10.827  chance=10.825  std=0.020  t=277.6s
+[emb_noise]  1900/2000  loss=10.827  chance=10.825  std=0.020  t=293.0s
+[data]      0/5000  loss=10.846  t=1.2s
+[data]    100/5000  loss=6.090  t=16.8s
+[data]    200/5000  loss=5.849  t=32.4s
+[data]    300/5000  loss=5.169  t=48.1s
+[data]    400/5000  loss=5.115  t=63.7s
+[data]    500/5000  loss=4.429  t=79.3s
+[data]    600/5000  loss=4.209  t=95.0s
+[data]    700/5000  loss=4.110  t=110.6s
+[data]    800/5000  loss=4.100  t=126.5s
+[data]    900/5000  loss=4.408  t=142.2s
+[data]   1000/5000  loss=3.942  t=157.9s
+[data]   1100/5000  loss=4.255  t=173.6s
+[data]   1200/5000  loss=4.302  t=189.4s
+[data]   1300/5000  loss=4.014  t=205.1s
+[data]   1400/5000  loss=3.459  t=220.8s
+[data]   1500/5000  loss=3.580  t=236.6s
+[data]   1600/5000  loss=3.634  t=252.3s
+[data]   1700/5000  loss=3.395  t=268.0s
+[data]   1800/5000  loss=3.876  t=283.8s
+[data]   1900/5000  loss=3.925  t=299.5s
+[data]   2000/5000  loss=3.607  t=315.3s
+[data]   2100/5000  loss=3.141  t=331.0s
+[data]   2200/5000  loss=3.529  t=346.8s
+[data]   2300/5000  loss=3.401  t=362.5s
+[data]   2400/5000  loss=3.234  t=378.3s
+[data]   2500/5000  loss=3.440  t=394.1s
+[data]   2600/5000  loss=3.623  t=409.8s
+[data]   2700/5000  loss=3.668  t=425.8s
+[data]   2800/5000  loss=3.040  t=441.6s
+[data]   2900/5000  loss=3.464  t=457.4s
+[data]   3000/5000  loss=2.796  t=473.1s
+[data]   3100/5000  loss=2.820  t=488.9s
+[data]   3200/5000  loss=2.830  t=504.7s
+[data]   3300/5000  loss=3.371  t=520.5s
+[data]   3400/5000  loss=2.831  t=536.3s
+[data]   3500/5000  loss=3.178  t=552.0s
+[data]   3600/5000  loss=3.072  t=567.7s
+[data]   3700/5000  loss=3.153  t=583.5s
+[data]   3800/5000  loss=2.677  t=599.2s
+[data]   3900/5000  loss=2.801  t=614.9s
+[data]   4000/5000  loss=3.275  t=630.7s
+[data]   4100/5000  loss=2.697  t=646.4s
+[data]   4200/5000  loss=3.119  t=662.1s
+[data]   4300/5000  loss=3.153  t=677.9s
+[data]   4400/5000  loss=3.090  t=693.7s
+[data]   4500/5000  loss=2.629  t=709.4s
+[data]   4600/5000  loss=3.034  t=725.2s
+[data]   4700/5000  loss=3.171  t=741.0s
+[data]   4800/5000  loss=2.632  t=756.7s
+[data]   4900/5000  loss=2.659  t=772.5s
+
+[emb_noise_std=0.02] ECE=0.0173  mean_conf=0.448  top1_acc=0.431
+
+Reliability diagram [emb_noise_std=0.02]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     4706    0.050    0.055  +0.005
+  [0.07,0.13]    19177    0.103    0.103  +0.001
+  [0.13,0.20]    22335    0.167    0.167  +0.000
+  [0.20,0.27]    22329    0.233    0.226  -0.007
+  [0.27,0.33]    20225    0.299    0.290  -0.009
+  [0.33,0.40]    17652    0.366    0.351  -0.014
+  [0.40,0.47]    14559    0.432    0.414  -0.018
+  [0.47,0.53]    12049    0.499    0.473  -0.027
+  [0.53,0.60]    10192    0.566    0.529  -0.037
+  [0.60,0.67]     8582    0.632    0.606  -0.027
+  [0.67,0.73]     7532    0.700    0.657  -0.043
+  [0.73,0.80]     6855    0.766    0.742  -0.025
+  [0.80,0.87]     6635    0.833    0.795  -0.037
+  [0.87,0.93]     7155    0.901    0.852  -0.049
+  [0.93,1.00]    20721    0.979    0.953  -0.026
+
+===== Condition: emb_noise_std=0.1 (noise_mode=embedding) =====
+[emb_noise]     0/2000  loss=10.879  chance=10.825  std=0.100  t=0.1s
+[emb_noise]   100/2000  loss=10.877  chance=10.825  std=0.100  t=15.7s
+[emb_noise]   200/2000  loss=10.869  chance=10.825  std=0.100  t=31.3s
+[emb_noise]   300/2000  loss=10.847  chance=10.825  std=0.100  t=46.8s
+[emb_noise]   400/2000  loss=10.842  chance=10.825  std=0.100  t=62.2s
+[emb_noise]   500/2000  loss=10.832  chance=10.825  std=0.100  t=77.5s
+[emb_noise]   600/2000  loss=10.838  chance=10.825  std=0.100  t=93.0s
+[emb_noise]   700/2000  loss=10.834  chance=10.825  std=0.100  t=108.4s
+[emb_noise]   800/2000  loss=10.833  chance=10.825  std=0.100  t=123.9s
+[emb_noise]   900/2000  loss=10.832  chance=10.825  std=0.100  t=139.3s
+[emb_noise]  1000/2000  loss=10.828  chance=10.825  std=0.100  t=154.6s
+[emb_noise]  1100/2000  loss=10.831  chance=10.825  std=0.100  t=170.0s
+[emb_noise]  1200/2000  loss=10.836  chance=10.825  std=0.100  t=185.3s
+[emb_noise]  1300/2000  loss=10.832  chance=10.825  std=0.100  t=200.7s
+[emb_noise]  1400/2000  loss=10.831  chance=10.825  std=0.100  t=216.1s
+[emb_noise]  1500/2000  loss=10.829  chance=10.825  std=0.100  t=231.5s
+[emb_noise]  1600/2000  loss=10.829  chance=10.825  std=0.100  t=246.9s
+[emb_noise]  1700/2000  loss=10.827  chance=10.825  std=0.100  t=262.3s
+[emb_noise]  1800/2000  loss=10.827  chance=10.825  std=0.100  t=277.8s
+[emb_noise]  1900/2000  loss=10.827  chance=10.825  std=0.100  t=293.2s
+[data]      0/5000  loss=10.842  t=1.3s
+[data]    100/5000  loss=6.081  t=16.7s
+[data]    200/5000  loss=5.651  t=32.3s
+[data]    300/5000  loss=4.993  t=48.0s
+[data]    400/5000  loss=4.959  t=63.6s
+[data]    500/5000  loss=4.342  t=79.3s
+[data]    600/5000  loss=4.161  t=94.9s
+[data]    700/5000  loss=4.076  t=110.5s
+[data]    800/5000  loss=4.083  t=126.2s
+[data]    900/5000  loss=4.389  t=141.9s
+[data]   1000/5000  loss=3.960  t=157.6s
+[data]   1100/5000  loss=4.276  t=173.3s
+[data]   1200/5000  loss=4.339  t=189.0s
+[data]   1300/5000  loss=4.073  t=204.7s
+[data]   1400/5000  loss=3.550  t=220.4s
+[data]   1500/5000  loss=3.686  t=236.1s
+[data]   1600/5000  loss=3.734  t=251.8s
+[data]   1700/5000  loss=3.516  t=267.4s
+[data]   1800/5000  loss=3.982  t=283.1s
+[data]   1900/5000  loss=4.003  t=298.8s
+[data]   2000/5000  loss=3.714  t=314.5s
+[data]   2100/5000  loss=3.270  t=330.2s
+[data]   2200/5000  loss=3.627  t=345.9s
+[data]   2300/5000  loss=3.493  t=361.7s
+[data]   2400/5000  loss=3.356  t=377.4s
+[data]   2500/5000  loss=3.556  t=393.1s
+[data]   2600/5000  loss=3.723  t=408.9s
+[data]   2700/5000  loss=3.781  t=424.6s
+[data]   2800/5000  loss=3.160  t=440.4s
+[data]   2900/5000  loss=3.553  t=456.1s
+[data]   3000/5000  loss=2.889  t=471.9s
+[data]   3100/5000  loss=2.910  t=487.6s
+[data]   3200/5000  loss=2.926  t=503.4s
+[data]   3300/5000  loss=3.478  t=519.1s
+[data]   3400/5000  loss=2.940  t=534.8s
+[data]   3500/5000  loss=3.273  t=550.5s
+[data]   3600/5000  loss=3.151  t=566.2s
+[data]   3700/5000  loss=3.275  t=581.9s
+[data]   3800/5000  loss=2.793  t=597.6s
+[data]   3900/5000  loss=2.918  t=613.3s
+[data]   4000/5000  loss=3.353  t=629.1s
+[data]   4100/5000  loss=2.835  t=644.8s
+[data]   4200/5000  loss=3.225  t=660.5s
+[data]   4300/5000  loss=3.270  t=676.3s
+[data]   4400/5000  loss=3.185  t=692.1s
+[data]   4500/5000  loss=2.767  t=707.8s
+[data]   4600/5000  loss=3.133  t=723.6s
+[data]   4700/5000  loss=3.263  t=739.3s
+[data]   4800/5000  loss=2.719  t=755.1s
+[data]   4900/5000  loss=2.758  t=770.9s
+[emb_noise_std=0.1] ECE=0.0160  mean_conf=0.436  top1_acc=0.420
+
+Reliability diagram [emb_noise_std=0.1]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     6020    0.049    0.050  +0.002
+  [0.07,0.13]    20073    0.102    0.100  -0.002
+  [0.13,0.20]    23359    0.167    0.167  +0.000
+  [0.20,0.27]    22524    0.233    0.225  -0.008
+  [0.27,0.33]    20893    0.299    0.288  -0.011
+  [0.33,0.40]    17448    0.365    0.352  -0.014
+  [0.40,0.47]    14575    0.432    0.418  -0.015
+  [0.47,0.53]    11644    0.499    0.487  -0.011
+  [0.53,0.60]     9659    0.566    0.537  -0.029
+  [0.60,0.67]     8430    0.633    0.605  -0.028
+  [0.67,0.73]     7035    0.698    0.662  -0.037
+  [0.73,0.80]     6285    0.766    0.737  -0.029
+  [0.80,0.87]     5902    0.833    0.788  -0.044
+  [0.87,0.93]     6726    0.902    0.844  -0.057
+  [0.93,1.00]    20131    0.978    0.951  -0.027
+
+===== Condition: emb_noise_std=1 (noise_mode=embedding) =====
+[emb_noise]     0/2000  loss=10.875  chance=10.825  std=1.000  t=0.1s
+[emb_noise]   100/2000  loss=10.882  chance=10.825  std=1.000  t=15.7s
+[emb_noise]   200/2000  loss=10.873  chance=10.825  std=1.000  t=31.3s
+[emb_noise]   300/2000  loss=10.867  chance=10.825  std=1.000  t=46.9s
+[emb_noise]   400/2000  loss=10.860  chance=10.825  std=1.000  t=62.5s
+[emb_noise]   500/2000  loss=10.860  chance=10.825  std=1.000  t=78.0s
+[emb_noise]   600/2000  loss=10.859  chance=10.825  std=1.000  t=93.5s
+[emb_noise]   700/2000  loss=10.859  chance=10.825  std=1.000  t=109.0s
+[emb_noise]   800/2000  loss=10.863  chance=10.825  std=1.000  t=124.5s
+[emb_noise]   900/2000  loss=10.852  chance=10.825  std=1.000  t=140.0s
+[emb_noise]  1000/2000  loss=10.842  chance=10.825  std=1.000  t=155.5s
+[emb_noise]  1100/2000  loss=10.835  chance=10.825  std=1.000  t=171.0s
+[emb_noise]  1200/2000  loss=10.835  chance=10.825  std=1.000  t=186.5s
+[emb_noise]  1300/2000  loss=10.833  chance=10.825  std=1.000  t=201.9s
+[emb_noise]  1400/2000  loss=10.831  chance=10.825  std=1.000  t=217.4s
+[emb_noise]  1500/2000  loss=10.829  chance=10.825  std=1.000  t=232.8s
+[emb_noise]  1600/2000  loss=10.828  chance=10.825  std=1.000  t=248.2s
+[emb_noise]  1700/2000  loss=10.827  chance=10.825  std=1.000  t=263.6s
+[emb_noise]  1800/2000  loss=10.827  chance=10.825  std=1.000  t=279.1s
+[emb_noise]  1900/2000  loss=10.826  chance=10.825  std=1.000  t=294.5s
+[data]      0/5000  loss=10.832  t=1.5s
+[data]    100/5000  loss=6.098  t=16.9s
+[data]    200/5000  loss=5.888  t=32.5s
+[data]    300/5000  loss=5.403  t=48.2s
+[data]    400/5000  loss=5.434  t=63.8s
+[data]    500/5000  loss=4.668  t=79.3s
+[data]    600/5000  loss=4.385  t=94.9s
+[data]    700/5000  loss=4.249  t=110.6s
+[data]    800/5000  loss=4.228  t=126.2s
+[data]    900/5000  loss=4.544  t=141.9s
+[data]   1000/5000  loss=4.062  t=157.5s
+[data]   1100/5000  loss=4.366  t=173.2s
+[data]   1200/5000  loss=4.384  t=188.9s
+[data]   1300/5000  loss=4.134  t=204.5s
+[data]   1400/5000  loss=3.600  t=220.2s
+[data]   1500/5000  loss=3.761  t=235.9s
+[data]   1600/5000  loss=3.771  t=251.6s
+[data]   1700/5000  loss=3.562  t=267.3s
+[data]   1800/5000  loss=4.053  t=283.0s
+[data]   1900/5000  loss=4.070  t=298.7s
+[data]   2000/5000  loss=3.770  t=314.4s
+[data]   2100/5000  loss=3.306  t=330.1s
+[data]   2200/5000  loss=3.692  t=345.9s
+[data]   2300/5000  loss=3.538  t=361.6s
+[data]   2400/5000  loss=3.408  t=377.3s
+[data]   2500/5000  loss=3.583  t=393.0s
+[data]   2600/5000  loss=3.784  t=408.8s
+[data]   2700/5000  loss=3.788  t=424.5s
+[data]   2800/5000  loss=3.178  t=440.2s
+[data]   2900/5000  loss=3.584  t=456.0s
+[data]   3000/5000  loss=2.914  t=471.7s
+[data]   3100/5000  loss=2.961  t=487.4s
+[data]   3200/5000  loss=2.945  t=503.2s
+[data]   3300/5000  loss=3.492  t=518.9s
+[data]   3400/5000  loss=2.967  t=534.7s
+[data]   3500/5000  loss=3.281  t=550.4s
+[data]   3600/5000  loss=3.183  t=566.2s
+[data]   3700/5000  loss=3.256  t=581.9s
+[data]   3800/5000  loss=2.812  t=597.7s
+[data]   3900/5000  loss=2.922  t=613.4s
+[data]   4000/5000  loss=3.366  t=629.2s
+[data]   4100/5000  loss=2.812  t=644.9s
+[data]   4200/5000  loss=3.195  t=660.7s
+[data]   4300/5000  loss=3.254  t=676.4s
+[data]   4400/5000  loss=3.143  t=692.1s
+[data]   4500/5000  loss=2.740  t=707.8s
+[data]   4600/5000  loss=3.110  t=723.6s
+[data]   4700/5000  loss=3.263  t=739.3s
+[data]   4800/5000  loss=2.732  t=755.0s
+[data]   4900/5000  loss=2.773  t=770.7s
+
+[emb_noise_std=1] ECE=0.0142  mean_conf=0.435  top1_acc=0.422
+
+Reliability diagram [emb_noise_std=1]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     6399    0.049    0.049  +0.000
+  [0.07,0.13]    20765    0.101    0.104  +0.003
+  [0.13,0.20]    22736    0.167    0.170  +0.003
+  [0.20,0.27]    22135    0.233    0.230  -0.002
+  [0.27,0.33]    19991    0.299    0.292  -0.007
+  [0.33,0.40]    17387    0.366    0.352  -0.014
+  [0.40,0.47]    14715    0.432    0.424  -0.009
+  [0.47,0.53]    12200    0.499    0.475  -0.023
+  [0.53,0.60]     9898    0.565    0.536  -0.029
+  [0.60,0.67]     8797    0.632    0.604  -0.028
+  [0.67,0.73]     7008    0.700    0.682  -0.018
+  [0.73,0.80]     6468    0.766    0.739  -0.027
+  [0.80,0.87]     6019    0.833    0.799  -0.034
+  [0.87,0.93]     6525    0.902    0.863  -0.038
+  [0.93,1.00]    19661    0.979    0.950  -0.029
+
+===== Condition: emb_noise_std=3 (noise_mode=embedding) =====
+/home/dbrayjr5/miniconda3/envs/noise/lib/python3.10/site-packages/torch/cuda/__init__.py:1061: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+[emb_noise]     0/2000  loss=10.874  chance=10.825  std=3.000  t=0.6s
+[emb_noise]   100/2000  loss=10.878  chance=10.825  std=3.000  t=14.3s
+[emb_noise]   200/2000  loss=10.870  chance=10.825  std=3.000  t=28.2s
+[emb_noise]   300/2000  loss=10.861  chance=10.825  std=3.000  t=42.4s
+[emb_noise]   400/2000  loss=10.858  chance=10.825  std=3.000  t=56.9s
+[emb_noise]   500/2000  loss=10.858  chance=10.825  std=3.000  t=71.7s
+[emb_noise]   600/2000  loss=10.858  chance=10.825  std=3.000  t=86.8s
+[emb_noise]   700/2000  loss=10.859  chance=10.825  std=3.000  t=102.3s
+[emb_noise]   800/2000  loss=10.863  chance=10.825  std=3.000  t=118.4s
+[emb_noise]   900/2000  loss=10.856  chance=10.825  std=3.000  t=134.1s
+[emb_noise]  1000/2000  loss=10.855  chance=10.825  std=3.000  t=149.4s
+[emb_noise]  1100/2000  loss=10.851  chance=10.825  std=3.000  t=164.7s
+[emb_noise]  1200/2000  loss=10.852  chance=10.825  std=3.000  t=180.2s
+[emb_noise]  1300/2000  loss=10.855  chance=10.825  std=3.000  t=195.9s
+[emb_noise]  1400/2000  loss=10.853  chance=10.825  std=3.000  t=211.5s
+[emb_noise]  1500/2000  loss=10.847  chance=10.825  std=3.000  t=227.0s
+[emb_noise]  1600/2000  loss=10.846  chance=10.825  std=3.000  t=242.4s
+[emb_noise]  1700/2000  loss=10.845  chance=10.825  std=3.000  t=257.9s
+[emb_noise]  1800/2000  loss=10.847  chance=10.825  std=3.000  t=273.4s
+[emb_noise]  1900/2000  loss=10.843  chance=10.825  std=3.000  t=288.9s
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[data]      0/5000  loss=10.861  t=1.1s
+[data]    100/5000  loss=6.193  t=16.5s
+Token indices sequence length is longer than the specified maximum sequence length for this model (1106 > 1024). Running this sequence through the model will result in indexing errors
+[data]    200/5000  loss=5.711  t=32.2s
+[data]    300/5000  loss=5.006  t=47.9s
+[data]    400/5000  loss=4.965  t=63.4s
+[data]    500/5000  loss=4.345  t=78.9s
+[data]    600/5000  loss=4.171  t=94.5s
+[data]    700/5000  loss=4.026  t=110.2s
+[data]    800/5000  loss=3.963  t=125.9s
+[data]    900/5000  loss=4.195  t=141.5s
+[data]   1000/5000  loss=3.795  t=157.2s
+[data]   1100/5000  loss=4.102  t=172.9s
+[data]   1200/5000  loss=4.140  t=188.4s
+[data]   1300/5000  loss=3.840  t=204.0s
+[data]   1400/5000  loss=3.253  t=219.7s
+[data]   1500/5000  loss=3.352  t=235.4s
+[data]   1600/5000  loss=3.416  t=251.1s
+[data]   1700/5000  loss=3.221  t=266.7s
+[data]   1800/5000  loss=3.683  t=282.4s
+[data]   1900/5000  loss=3.727  t=298.0s
+[data]   2000/5000  loss=3.443  t=313.7s
+[data]   2100/5000  loss=2.907  t=329.4s
+[data]   2200/5000  loss=3.344  t=345.0s
+[data]   2300/5000  loss=3.244  t=360.7s
+[data]   2400/5000  loss=3.049  t=376.4s
+[data]   2500/5000  loss=3.294  t=392.1s
+[data]   2600/5000  loss=3.464  t=407.8s
+[data]   2700/5000  loss=3.495  t=423.5s
+[data]   2800/5000  loss=2.861  t=439.2s
+[data]   2900/5000  loss=3.318  t=454.9s
+[data]   3000/5000  loss=2.654  t=470.6s
+[data]   3100/5000  loss=2.642  t=486.3s
+[data]   3200/5000  loss=2.685  t=502.0s
+[data]   3300/5000  loss=3.239  t=517.6s
+[data]   3400/5000  loss=2.672  t=533.4s
+[data]   3500/5000  loss=3.016  t=549.0s
+[data]   3600/5000  loss=2.913  t=564.7s
+[data]   3700/5000  loss=3.020  t=580.4s
+[data]   3800/5000  loss=2.547  t=596.2s
+[data]   3900/5000  loss=2.676  t=612.0s
+[data]   4000/5000  loss=3.158  t=627.7s
+[data]   4100/5000  loss=2.591  t=643.4s
+[data]   4200/5000  loss=2.992  t=659.1s
+[data]   4300/5000  loss=3.031  t=674.8s
+[data]   4400/5000  loss=2.949  t=690.5s
+[data]   4500/5000  loss=2.517  t=706.2s
+[data]   4600/5000  loss=2.902  t=722.0s
+[data]   4700/5000  loss=3.058  t=737.7s
+[data]   4800/5000  loss=2.500  t=753.4s
+[data]   4900/5000  loss=2.508  t=769.1s
+
+[emb_noise_std=3] ECE=0.0185  mean_conf=0.469  top1_acc=0.451
+
+Reliability diagram [emb_noise_std=3]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     4175    0.050    0.050  -0.000
+  [0.07,0.13]    16931    0.102    0.105  +0.002
+  [0.13,0.20]    20717    0.167    0.167  -0.000
+  [0.20,0.27]    20669    0.233    0.227  -0.006
+  [0.27,0.33]    19614    0.300    0.292  -0.007
+  [0.33,0.40]    17510    0.366    0.353  -0.013
+  [0.40,0.47]    14868    0.433    0.414  -0.019
+  [0.47,0.53]    12463    0.499    0.475  -0.025
+  [0.53,0.60]    10636    0.566    0.532  -0.033
+  [0.60,0.67]     9414    0.632    0.592  -0.041
+  [0.67,0.73]     7901    0.700    0.661  -0.039
+  [0.73,0.80]     7442    0.767    0.726  -0.041
+  [0.80,0.87]     7570    0.834    0.789  -0.044
+  [0.87,0.93]     8379    0.901    0.854  -0.047
+  [0.93,1.00]    22415    0.979    0.956  -0.023
+
+===== Condition: emb_noise_std=10 (noise_mode=embedding) =====
+/home/dbrayjr5/miniconda3/envs/noise/lib/python3.10/site-packages/torch/cuda/__init__.py:1061: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+[emb_noise]     0/2000  loss=10.874  chance=10.825  std=10.000  t=0.7s
+[emb_noise]   100/2000  loss=10.875  chance=10.825  std=10.000  t=14.5s
+[emb_noise]   200/2000  loss=10.869  chance=10.825  std=10.000  t=28.7s
+[emb_noise]   300/2000  loss=10.859  chance=10.825  std=10.000  t=43.2s
+[emb_noise]   400/2000  loss=10.856  chance=10.825  std=10.000  t=58.1s
+[emb_noise]   500/2000  loss=10.857  chance=10.825  std=10.000  t=73.5s
+[emb_noise]   600/2000  loss=10.856  chance=10.825  std=10.000  t=89.5s
+[emb_noise]   700/2000  loss=10.858  chance=10.825  std=10.000  t=105.4s
+[emb_noise]   800/2000  loss=10.863  chance=10.825  std=10.000  t=120.8s
+[emb_noise]   900/2000  loss=10.857  chance=10.825  std=10.000  t=136.1s
+[emb_noise]  1000/2000  loss=10.854  chance=10.825  std=10.000  t=151.6s
+[emb_noise]  1100/2000  loss=10.850  chance=10.825  std=10.000  t=167.3s
+[emb_noise]  1200/2000  loss=10.850  chance=10.825  std=10.000  t=183.0s
+[emb_noise]  1300/2000  loss=10.854  chance=10.825  std=10.000  t=198.6s
+[emb_noise]  1400/2000  loss=10.852  chance=10.825  std=10.000  t=214.0s
+[emb_noise]  1500/2000  loss=10.847  chance=10.825  std=10.000  t=229.6s
+[emb_noise]  1600/2000  loss=10.845  chance=10.825  std=10.000  t=245.2s
+[emb_noise]  1700/2000  loss=10.845  chance=10.825  std=10.000  t=260.8s
+[emb_noise]  1800/2000  loss=10.848  chance=10.825  std=10.000  t=276.4s
+[emb_noise]  1900/2000  loss=10.843  chance=10.825  std=10.000  t=291.9s
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[data]      0/5000  loss=10.806  t=1.4s
+[data]    100/5000  loss=6.138  t=16.8s
+Token indices sequence length is longer than the specified maximum sequence length for this model (1106 > 1024). Running this sequence through the model will result in indexing errors
+[data]    200/5000  loss=5.592  t=32.5s
+[data]    300/5000  loss=4.823  t=48.2s
+[data]    400/5000  loss=4.788  t=63.7s
+[data]    500/5000  loss=4.165  t=79.2s
+[data]    600/5000  loss=3.973  t=94.8s
+[data]    700/5000  loss=3.804  t=110.5s
+[data]    800/5000  loss=3.760  t=126.2s
+[data]    900/5000  loss=3.976  t=141.8s
+[data]   1000/5000  loss=3.568  t=157.5s
+[data]   1100/5000  loss=3.914  t=173.1s
+[data]   1200/5000  loss=3.957  t=188.7s
+[data]   1300/5000  loss=3.669  t=204.3s
+[data]   1400/5000  loss=3.092  t=220.0s
+[data]   1500/5000  loss=3.208  t=235.6s
+[data]   1600/5000  loss=3.289  t=251.3s
+[data]   1700/5000  loss=3.095  t=266.9s
+[data]   1800/5000  loss=3.565  t=282.6s
+[data]   1900/5000  loss=3.623  t=298.3s
+[data]   2000/5000  loss=3.328  t=313.9s
+[data]   2100/5000  loss=2.796  t=329.6s
+[data]   2200/5000  loss=3.247  t=345.3s
+[data]   2300/5000  loss=3.156  t=361.0s
+[data]   2400/5000  loss=2.966  t=376.7s
+[data]   2500/5000  loss=3.203  t=392.4s
+[data]   2600/5000  loss=3.390  t=408.1s
+[data]   2700/5000  loss=3.393  t=423.8s
+[data]   2800/5000  loss=2.764  t=439.4s
+[data]   2900/5000  loss=3.241  t=455.1s
+[data]   3000/5000  loss=2.583  t=470.9s
+[data]   3100/5000  loss=2.571  t=486.6s
+[data]   3200/5000  loss=2.635  t=502.3s
+[data]   3300/5000  loss=3.199  t=518.0s
+[data]   3400/5000  loss=2.617  t=533.7s
+[data]   3500/5000  loss=2.966  t=549.4s
+[data]   3600/5000  loss=2.868  t=565.1s
+[data]   3700/5000  loss=2.955  t=580.8s
+[data]   3800/5000  loss=2.502  t=596.5s
+[data]   3900/5000  loss=2.603  t=612.2s
+[data]   4000/5000  loss=3.106  t=628.0s
+[data]   4100/5000  loss=2.534  t=643.6s
+[data]   4200/5000  loss=2.954  t=659.4s
+[data]   4300/5000  loss=2.981  t=675.1s
+[data]   4400/5000  loss=2.926  t=690.8s
+[data]   4500/5000  loss=2.457  t=706.5s
+[data]   4600/5000  loss=2.887  t=722.2s
+[data]   4700/5000  loss=3.024  t=737.9s
+[data]   4800/5000  loss=2.452  t=753.6s
+[data]   4900/5000  loss=2.482  t=769.4s
+
+[emb_noise_std=10] ECE=0.0209  mean_conf=0.476  top1_acc=0.457
+
+Reliability diagram [emb_noise_std=10]
+           bin    count     conf      acc  gap
+  [0.00,0.07]     3833    0.050    0.062  +0.011
+  [0.07,0.13]    16450    0.103    0.111  +0.008
+  [0.13,0.20]    19992    0.167    0.165  -0.002
+  [0.20,0.27]    19884    0.233    0.227  -0.006
+  [0.27,0.33]    19187    0.300    0.287  -0.013
+  [0.33,0.40]    17334    0.366    0.350  -0.016
+  [0.40,0.47]    15509    0.432    0.413  -0.019
+  [0.47,0.53]    13130    0.499    0.476  -0.023
+  [0.53,0.60]    10835    0.566    0.535  -0.032
+  [0.60,0.67]     9578    0.632    0.587  -0.046
+  [0.67,0.73]     8337    0.699    0.661  -0.038
+  [0.73,0.80]     7738    0.766    0.727  -0.039
+  [0.80,0.87]     7496    0.833    0.784  -0.049
+  [0.87,0.93]     8499    0.901    0.853  -0.049
+  [0.93,1.00]    22902    0.979    0.955  -0.024
+
+================ Summary ================
+                baseline: ECE=0.0259  mean_conf=0.491  top1_acc=0.466
+             token_noise: ECE=0.0177  mean_conf=0.450  top1_acc=0.432
+      emb_noise_std=0.02: ECE=0.0173  mean_conf=0.448  top1_acc=0.431
+       emb_noise_std=0.1: ECE=0.0160  mean_conf=0.436  top1_acc=0.420
+         emb_noise_std=1: ECE=0.0142  mean_conf=0.435  top1_acc=0.422
+         emb_noise_std=3: ECE=0.0185  mean_conf=0.469  top1_acc=0.451
+        emb_noise_std=10: ECE=0.0209  mean_conf=0.476  top1_acc=0.457

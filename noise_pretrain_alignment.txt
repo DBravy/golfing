@@ -1,0 +1,45 @@
+python noise_pretrain_alignment.py
+/home/dbrayjr5/miniconda3/envs/noise/lib/python3.10/site-packages/torch/cuda/__init__.py:1061: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+device: cuda
+model:  n_layer=6  n_embd=256  n_head=4  block=128
+params: ~17.64M (including tied head)
+noise:  mode=token  steps=2000  batch=32  lr=0.0003
+metric: top-10 left singular vector subspaces
+
+random baseline (empirical, R^256, k=10): 0.163
+
+measurement checkpoints: [0] + [10, 25, 50, 100, 200, 400, 800, 1600] + [2000]
+
+[step     0] loss=--  mean_adj=0.170  x1.04_over_baseline  per_boundary=[0.178 0.158 0.173 0.164 0.175]
+[step    10] loss=10.872  mean_adj=0.209  x1.28_over_baseline  per_boundary=[0.206 0.195 0.205 0.209 0.230]
+[step    25] loss=10.872  mean_adj=0.263  x1.61_over_baseline  per_boundary=[0.231 0.235 0.275 0.282 0.290]
+[step    50] loss=10.874  mean_adj=0.318  x1.95_over_baseline  per_boundary=[0.245 0.301 0.326 0.349 0.368]
+[step   100] loss=10.867  mean_adj=0.390  x2.40_over_baseline  per_boundary=[0.261 0.368 0.410 0.445 0.468]
+[step   200] loss=10.861  mean_adj=0.462  x2.84_over_baseline  per_boundary=[0.280 0.421 0.493 0.540 0.573]
+[step   400] loss=10.846  mean_adj=0.471  x2.89_over_baseline  per_boundary=[0.294 0.430 0.502 0.551 0.576]
+[step   800] loss=10.833  mean_adj=0.473  x2.90_over_baseline  per_boundary=[0.302 0.432 0.505 0.545 0.579]
+[step  1600] loss=10.829  mean_adj=0.470  x2.88_over_baseline  per_boundary=[0.279 0.432 0.508 0.546 0.583]
+[step  2000] loss=10.829  mean_adj=0.468  x2.87_over_baseline  per_boundary=[0.272 0.431 0.511 0.544 0.580]
+total pretraining time: 340.5s
+
+=========== Summary: mean adjacent-layer top-k overlap ===========
+    step     loss   mean_adj   ratio_over_baseline
+       0       --      0.170                 1.04x
+      10   10.872      0.209                 1.28x
+      25   10.872      0.263                 1.61x
+      50   10.874      0.318                 1.95x
+     100   10.867      0.390                 2.40x
+     200   10.861      0.462                 2.84x
+     400   10.846      0.471                 2.89x
+     800   10.833      0.473                 2.90x
+    1600   10.829      0.470                 2.88x
+    2000   10.829      0.468                 2.87x
+random baseline: 0.163
+
+init mean adjacent overlap:  0.170 (1.04x baseline)
+final mean adjacent overlap: 0.468 (2.87x baseline)
+change: +0.298  (multiplicative: 2.76x)
+
+==> noise pretraining INDUCED cross-layer alignment (consistent with Bray's early-training surge)
+

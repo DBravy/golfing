@@ -1,0 +1,251 @@
+Vocab: 33277 | train tokens: 2,051,910 | val tokens: 213,886
+
+Model config: {'vocab_size': 33277, 'block_size': 128, 'n_layer': 6, 'n_head': 4, 'n_embd': 256, 'dropout': 0.1, 'attention_mode': 'baseline'}
+Train config: {'n_steps': 3200, 'batch_size': 64, 'lr': 0.0003, 'weight_decay': 0.01, 'grad_clip': 1.0, 'eval_every': 250, 'eval_batches': 20}
+Conditions: ['baseline', 'xsa', 'sparsemax_k', 'xsa_sparsemax_k']
+
+======================================================================
+Condition: baseline
+======================================================================
+  [          baseline] step     1/3200 | train_ema 158.3763 | val 152.4577 | ppl 1627510267598354042649123550138544345590849206326561962582599532544.00 | acc 0.013 |   3.7s
+  [          baseline] step   250/3200 | train_ema 17.6378 | val 13.3247 | ppl 612108.97 | acc 0.116 |  70.1s
+  [          baseline] step   500/3200 | train_ema 9.2434 | val 8.1930 | ppl 3615.63 | acc 0.131 | 138.3s
+  [          baseline] step   750/3200 | train_ema 7.5608 | val 7.0731 | ppl 1179.79 | acc 0.143 | 206.9s
+  [          baseline] step  1000/3200 | train_ema 7.0421 | val 6.6966 | ppl  809.66 | acc 0.157 | 275.9s
+  [          baseline] step  1250/3200 | train_ema 6.8275 | val 6.5350 | ppl  688.81 | acc 0.165 | 344.6s
+  [          baseline] step  1500/3200 | train_ema 6.6887 | val 6.4113 | ppl  608.66 | acc 0.173 | 413.4s
+  [          baseline] step  1750/3200 | train_ema 6.5850 | val 6.3348 | ppl  563.85 | acc 0.178 | 482.4s
+  [          baseline] step  2000/3200 | train_ema 6.5109 | val 6.2601 | ppl  523.28 | acc 0.184 | 551.4s
+  [          baseline] step  2250/3200 | train_ema 6.4444 | val 6.2140 | ppl  499.69 | acc 0.187 | 620.2s
+  [          baseline] step  2500/3200 | train_ema 6.3969 | val 6.1685 | ppl  477.46 | acc 0.191 | 689.3s
+  [          baseline] step  2750/3200 | train_ema 6.3370 | val 6.1244 | ppl  456.87 | acc 0.194 | 758.3s
+  [          baseline] step  3000/3200 | train_ema 6.2881 | val 6.0905 | ppl  441.63 | acc 0.196 | 827.1s
+  [baseline] saved checkpoint to baseline.pt
+  
+======================================================================
+Condition: xsa
+======================================================================
+  [               xsa] step     1/3200 | train_ema 159.0024 | val 153.9769 | ppl 7435263282879093797003162157649763161855018970154963639338142793728.00 | acc 0.013 |   3.4s
+  [               xsa] step   250/3200 | train_ema 18.0796 | val 13.5028 | ppl 731437.38 | acc 0.105 |  74.3s
+  [               xsa] step   500/3200 | train_ema 9.3661 | val 8.2760 | ppl 3928.41 | acc 0.122 | 145.2s
+  [               xsa] step   750/3200 | train_ema 7.6502 | val 7.1350 | ppl 1255.09 | acc 0.132 | 216.0s
+  [               xsa] step  1000/3200 | train_ema 7.1378 | val 6.7737 | ppl  874.56 | acc 0.141 | 287.0s
+  [               xsa] step  1250/3200 | train_ema 6.9296 | val 6.6103 | ppl  742.68 | acc 0.148 | 357.8s
+  [               xsa] step  1500/3200 | train_ema 6.8030 | val 6.5065 | ppl  669.45 | acc 0.155 | 428.7s
+  [               xsa] step  1750/3200 | train_ema 6.7143 | val 6.4469 | ppl  630.75 | acc 0.160 | 499.8s
+  [               xsa] step  2000/3200 | train_ema 6.6489 | val 6.3838 | ppl  592.15 | acc 0.165 | 570.6s
+  [               xsa] step  2250/3200 | train_ema 6.5964 | val 6.3536 | ppl  574.58 | acc 0.169 | 641.6s
+  [               xsa] step  2500/3200 | train_ema 6.5577 | val 6.3042 | ppl  546.85 | acc 0.175 | 712.6s
+  [               xsa] step  2750/3200 | train_ema 6.5105 | val 6.2657 | ppl  526.20 | acc 0.178 | 783.5s
+  [               xsa] step  3000/3200 | train_ema 6.4733 | val 6.2388 | ppl  512.26 | acc 0.179 | 854.4s
+  [xsa] saved checkpoint to xsa.pt
+======================================================================
+Condition: sparsemax_k
+======================================================================
+  [       sparsemax_k] step     1/3200 | train_ema 158.6127 | val 152.6603 | ppl 1993069505861263286847318893907401405101884813627508778734714880000.00 | acc 0.013 |   3.6s
+  [       sparsemax_k] step   250/3200 | train_ema 17.7437 | val 13.4218 | ppl 674555.83 | acc 0.115 |  75.4s
+  [       sparsemax_k] step   500/3200 | train_ema 9.2824 | val 8.2170 | ppl 3703.25 | acc 0.131 | 147.6s
+  [       sparsemax_k] step   750/3200 | train_ema 7.5855 | val 7.0977 | ppl 1209.14 | acc 0.140 | 219.8s
+  [       sparsemax_k] step  1000/3200 | train_ema 7.0674 | val 6.7230 | ppl  831.29 | acc 0.152 | 291.9s
+  [       sparsemax_k] step  1250/3200 | train_ema 6.8537 | val 6.5682 | ppl  712.12 | acc 0.158 | 364.3s
+  [       sparsemax_k] step  1500/3200 | train_ema 6.7218 | val 6.4501 | ppl  632.77 | acc 0.166 | 436.7s
+  [       sparsemax_k] step  1750/3200 | train_ema 6.6234 | val 6.3807 | ppl  590.32 | acc 0.171 | 509.1s
+  [       sparsemax_k] step  2000/3200 | train_ema 6.5523 | val 6.3063 | ppl  548.04 | acc 0.177 | 581.2s
+  [       sparsemax_k] step  2250/3200 | train_ema 6.4887 | val 6.2595 | ppl  522.96 | acc 0.181 | 653.6s
+  [       sparsemax_k] step  2500/3200 | train_ema 6.4470 | val 6.2255 | ppl  505.49 | acc 0.182 | 725.9s
+  [       sparsemax_k] step  2750/3200 | train_ema 6.3931 | val 6.1844 | ppl  485.13 | acc 0.187 | 798.2s
+  [       sparsemax_k] step  3000/3200 | train_ema 6.3504 | val 6.1563 | ppl  471.69 | acc 0.188 | 870.7s
+  [sparsemax_k] saved checkpoint to sparsemax_k.pt
+======================================================================
+Condition: xsa_sparsemax_k
+======================================================================
+  [   xsa_sparsemax_k] step     1/3200 | train_ema 159.0329 | val 154.2172 | ppl 9455838652565711571979728999783763080076338301247714880183632658432.00 | acc 0.013 |   3.7s
+  [   xsa_sparsemax_k] step   250/3200 | train_ema 18.5697 | val 13.5853 | ppl 794388.42 | acc 0.102 |  78.4s
+  [   xsa_sparsemax_k] step   500/3200 | train_ema 9.4055 | val 8.3102 | ppl 4065.16 | acc 0.123 | 153.2s
+  [   xsa_sparsemax_k] step   750/3200 | train_ema 7.6602 | val 7.1486 | ppl 1272.34 | acc 0.134 | 227.8s
+  [   xsa_sparsemax_k] step  1000/3200 | train_ema 7.1457 | val 6.7806 | ppl  880.60 | acc 0.143 | 302.5s
+  [   xsa_sparsemax_k] step  1250/3200 | train_ema 6.9341 | val 6.6139 | ppl  745.42 | acc 0.146 | 377.2s
+  [   xsa_sparsemax_k] step  1500/3200 | train_ema 6.8053 | val 6.5066 | ppl  669.56 | acc 0.154 | 451.8s
+  [   xsa_sparsemax_k] step  1750/3200 | train_ema 6.7160 | val 6.4486 | ppl  631.81 | acc 0.158 | 526.6s
+  [   xsa_sparsemax_k] step  2000/3200 | train_ema 6.6494 | val 6.3913 | ppl  596.64 | acc 0.162 | 601.4s
+  [   xsa_sparsemax_k] step  2250/3200 | train_ema 6.5987 | val 6.3583 | ppl  577.28 | acc 0.162 | 676.1s
+  [   xsa_sparsemax_k] step  2500/3200 | train_ema 6.5575 | val 6.3137 | ppl  552.10 | acc 0.168 | 751.1s
+  [   xsa_sparsemax_k] step  2750/3200 | train_ema 6.5107 | val 6.2815 | ppl  534.56 | acc 0.172 | 825.8s
+  [   xsa_sparsemax_k] step  3000/3200 | train_ema 6.4752 | val 6.2549 | ppl  520.54 | acc 0.172 | 900.5s
+  [xsa_sparsemax_k] saved checkpoint to xsa_sparsemax_k.pt
+
+======================================================================
+FINAL COMPARISON
+======================================================================
+Metric                          baseline               xsa       sparsemax_k   xsa_sparsemax_k
+----------------------------------------------------------------------------------------------
+val_ce (loss)                     6.0462            6.2088            6.1196            6.2291
+perplexity                      422.5102          497.0867          454.6943          507.3105
+top-1 accuracy                    0.1998            0.1810            0.1887            0.1743
+Brier score                       0.9229            0.9353            0.9314            0.9399
+entropy (nats)                    5.7971            6.1621            5.8966            6.1288
+ECE                               0.0182            0.0155            0.0191            0.0194
+confidence|correct                0.3451            0.2797            0.3227            0.2783
+confidence|wrong                  0.1777            0.1440            0.1687            0.1416
+
+Uniform-entropy reference for vocab=33277: 10.413 nats
+
+======================================================================
+DELTAS vs baseline  (negative val_loss / ppl is better)
+======================================================================
+Condition                   dLoss       dPPL       dAcc       dECE
+----------------------------------------------------------------
+xsa                       +0.1626   +74.5765    -0.0188    -0.0027
+sparsemax_k               +0.0734   +32.1841    -0.0112    +0.0009
+xsa_sparsemax_k           +0.1829   +84.8003    -0.0255    +0.0012
+
+Super-additivity test (loss-drop relative to baseline):
+  xsa alone             : -0.1626
+  sparsemax_k alone     : -0.0734
+  both                  : -0.1829
+
+python xsa_ab_test.py --iters 400 --seq_len 256 --modes spk xsa_spk --out xsa_spk_results.json
+Device: cuda
+  GPU: Tesla T4
+  Compute capability: 7.5
+  Low-precision dtype: torch.float16 (fp16 (Turing/older))
+Config: iters=400 seq_len=256 batch_tok=32768 grad_accum=4
+  layers=11 dim=512 heads=8 kv=4
+  seeds=[42, 43] modes=['spk', 'xsa_spk']
+
+--- Loading data ---
+Loading cached tokens from wikitext-103/tokens_gpt2.npz
+Train: 119,601,066 tokens | Val: 250,895 tokens
+
+======================================================================
+Run: seed42_spk
+======================================================================
+  [spk] params: 57,478,744 | xsa=False | spk=True
+  [               spk] step     1/400 | train 10.7910 | val 14.8635 | ppl 2851927.90 | bias pre/post 0.064/0.064 |   5.6s
+  [               spk] step   250/400 | train 4.7276 | val 4.3859 | ppl   80.31 | bias pre/post 0.436/0.436 | 517.9s
+  [               spk] step   400/400 | train 4.1167 | val 3.9352 | ppl   51.17 | bias pre/post 0.409/0.409 | 829.1s
+
+======================================================================
+Run: seed42_xsa_spk
+======================================================================
+  [xsa_spk] params: 57,478,744 | xsa=True | spk=True
+  [           xsa_spk] step     1/400 | train 10.7910 | val 14.8665 | ppl 2860547.40 | bias pre/post 0.064/-0.000 |   5.6s
+  [           xsa_spk] step   250/400 | train 4.7212 | val 4.3714 | ppl   79.16 | bias pre/post 0.650/-0.000 | 557.4s
+  [           xsa_spk] step   400/400 | train 4.1023 | val 3.9219 | ppl   50.50 | bias pre/post 0.641/-0.000 | 890.8s
+
+======================================================================
+Run: seed43_spk
+======================================================================
+  [spk] params: 57,478,744 | xsa=False | spk=True
+  [               spk] step     1/400 | train 10.8011 | val 14.9180 | ppl 3011672.48 | bias pre/post 0.065/0.065 |   5.3s
+  [               spk] step   250/400 | train 4.7408 | val 4.4022 | ppl   81.63 | bias pre/post 0.420/0.420 | 519.7s
+  [               spk] step   400/400 | train 4.1363 | val 3.9459 | ppl   51.72 | bias pre/post 0.388/0.388 | 830.6s
+
+======================================================================
+Run: seed43_xsa_spk
+======================================================================
+  [xsa_spk] params: 57,478,744 | xsa=True | spk=True
+  [           xsa_spk] step     1/400 | train 10.8011 | val 14.9207 | ppl 3019651.46 | bias pre/post 0.065/-0.000 |   5.6s
+  [           xsa_spk] step   250/400 | train 4.7323 | val 4.3847 | ppl   80.22 | bias pre/post 0.648/-0.000 | 556.5s
+  [           xsa_spk] step   400/400 | train 4.1311 | val 3.9345 | ppl   51.14 | bias pre/post 0.640/-0.000 | 890.2s
+
+==========================================================================================
+SUMMARY
+==========================================================================================
+  seed       mode      train        val        ppl   bias_pre  bias_post
+------------------------------------------------------------------------
+    42        spk     4.1167     3.9352      51.17      0.409      0.409
+    42    xsa_spk     4.1023     3.9219      50.50      0.641     -0.000
+    43        spk     4.1363     3.9459      51.72      0.388      0.388
+    43    xsa_spk     4.1311     3.9345      51.14      0.640     -0.000
+
+python xsa_ab_test.py --iters 400 --seq_len 256 --modes spk_mask xsa_spk_mask dg_k xsa_dg_k --out xsa_variants_results.json
+Device: cuda
+  GPU: Tesla T4
+  Compute capability: 7.5 
+  Low-precision dtype: torch.float16 (fp16 (Turing/older))
+Config: iters=400 seq_len=256 batch_tok=32768 grad_accum=4
+  layers=11 dim=512 heads=8 kv=4
+  seeds=[42, 43] modes=['spk_mask', 'xsa_spk_mask', 'dg_k', 'xsa_dg_k']
+
+--- Loading data ---
+Loading cached tokens from wikitext-103/tokens_gpt2.npz
+Train: 119,601,066 tokens | Val: 250,895 tokens
+
+======================================================================
+Run: seed42_spk_mask
+======================================================================
+  [spk_mask] params: 57,478,744 | active: spk_mask
+  [          spk_mask] step     1/400 | train 10.7910 | val 14.8655 | ppl 2857700.76 | bias pre/post 0.049/0.049 |   5.5s
+  [          spk_mask] step   250/400 | train 4.7551 | val 4.4098 | ppl   82.26 | bias pre/post 0.420/0.420 | 508.9s
+  [          spk_mask] step   400/400 | train 4.1384 | val 3.9540 | ppl   52.15 | bias pre/post 0.399/0.399 | 814.9s
+
+======================================================================
+Run: seed42_xsa_spk_mask
+======================================================================
+  [xsa_spk_mask] params: 57,478,744 | active: xsa, spk_mask
+  [      xsa_spk_mask] step     1/400 | train 10.7910 | val 14.8682 | ppl 2865267.37 | bias pre/post 0.049/-0.001 |   5.6s
+  [      xsa_spk_mask] step   250/400 | train 4.7471 | val 4.3898 | ppl   80.63 | bias pre/post 0.645/-0.000 | 549.8s
+  [      xsa_spk_mask] step   400/400 | train 4.1180 | val 3.9325 | ppl   51.03 | bias pre/post 0.638/-0.000 | 878.8s
+
+======================================================================
+Run: seed42_dg_k
+======================================================================
+  [dg_k] params: 57,681,496 | active: dg_k
+  [              dg_k] step     1/400 | train 10.7953 | val 14.8039 | ppl 2686913.35 | bias pre/post 0.063/0.063 |   5.5s
+  [              dg_k] step   250/400 | train 4.7473 | val 4.4055 | ppl   81.90 | bias pre/post 0.428/0.428 | 529.0s
+  [              dg_k] step   400/400 | train 4.1524 | val 3.9677 | ppl   52.86 | bias pre/post 0.409/0.409 | 845.3s
+
+======================================================================
+Run: seed42_xsa_dg_k
+======================================================================
+  [xsa_dg_k] params: 57,681,496 | active: xsa, dg_k
+  [          xsa_dg_k] step     1/400 | train 10.7953 | val 14.8062 | ppl 2693047.94 | bias pre/post 0.063/-0.000 |   5.7s
+  [          xsa_dg_k] step   250/400 | train 4.7354 | val 4.3818 | ppl   79.98 | bias pre/post 0.626/-0.000 | 565.9s
+  [          xsa_dg_k] step   400/400 | train 4.1193 | val 3.9338 | ppl   51.10 | bias pre/post 0.635/-0.000 | 903.6s
+
+======================================================================
+Run: seed43_spk_mask
+======================================================================
+  [spk_mask] params: 57,478,744 | active: spk_mask
+  [          spk_mask] step     1/400 | train 10.8011 | val 14.9186 | ppl 3013431.47 | bias pre/post 0.051/0.051 |   5.2s
+  [          spk_mask] step   250/400 | train 4.7637 | val 4.4180 | ppl   82.93 | bias pre/post 0.408/0.408 | 511.3s
+  [          spk_mask] step   400/400 | train 4.1517 | val 3.9598 | ppl   52.44 | bias pre/post 0.385/0.385 | 817.0s
+
+======================================================================
+Run: seed43_xsa_spk_mask
+======================================================================
+  [xsa_spk_mask] params: 57,478,744 | active: xsa, spk_mask
+  [      xsa_spk_mask] step     1/400 | train 10.8011 | val 14.9211 | ppl 3021079.62 | bias pre/post 0.051/-0.000 |   5.5s
+  [      xsa_spk_mask] step   250/400 | train 4.7648 | val 4.4239 | ppl   83.42 | bias pre/post 0.622/-0.000 | 549.5s
+  [      xsa_spk_mask] step   400/400 | train 4.1603 | val 3.9664 | ppl   52.79 | bias pre/post 0.612/-0.000 | 878.7s
+
+======================================================================
+Run: seed43_dg_k
+======================================================================
+  [dg_k] params: 57,681,496 | active: dg_k
+  [              dg_k] step     1/400 | train 10.7967 | val 14.8975 | ppl 2950409.41 | bias pre/post 0.062/0.062 |   5.4s
+  [              dg_k] step   250/400 | train 4.7465 | val 4.4097 | ppl   82.25 | bias pre/post 0.429/0.429 | 528.2s
+  [              dg_k] step   400/400 | train 4.1493 | val 3.9592 | ppl   52.42 | bias pre/post 0.408/0.408 | 843.4s
+
+======================================================================
+Run: seed43_xsa_dg_k
+======================================================================
+  [xsa_dg_k] params: 57,681,496 | active: xsa, dg_k
+  [          xsa_dg_k] step     1/400 | train 10.7967 | val 14.8997 | ppl 2957057.46 | bias pre/post 0.062/-0.000 |   5.7s
+  [          xsa_dg_k] step   250/400 | train 4.7418 | val 4.3965 | ppl   81.17 | bias pre/post 0.663/-0.000 | 565.2s
+  [          xsa_dg_k] step   400/400 | train 4.1519 | val 3.9551 | ppl   52.20 | bias pre/post 0.653/-0.000 | 903.3s
+
+==========================================================================================
+SUMMARY
+==========================================================================================
+  seed       mode      train        val        ppl   bias_pre  bias_post
+------------------------------------------------------------------------
+    42   spk_mask     4.1384     3.9540      52.15      0.399      0.399
+    42 xsa_spk_mask   4.1180     3.9325      51.03      0.638     -0.000
+    42       dg_k     4.1524     3.9677      52.86      0.409      0.409
+    42   xsa_dg_k     4.1193     3.9338      51.10      0.635     -0.000
+    43   spk_mask     4.1517     3.9598      52.44      0.385      0.385
+    43 xsa_spk_mask   4.1603     3.9664      52.79      0.612     -0.000
+    43       dg_k     4.1493     3.9592      52.42      0.408      0.408
+    43   xsa_dg_k     4.1519     3.9551      52.20      0.653     -0.000

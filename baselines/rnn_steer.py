@@ -82,8 +82,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import baseline
-from baseline import (
+import baselines.baseline as baseline
+from baselines.baseline import (
     Config,
     VOCAB_SIZE,
     PAD_ID,
@@ -93,7 +93,7 @@ from baseline import (
     get_lr,
     count_params,
 )
-from rnn_probe import TinyGPTWithResiduals, SparseLatent
+from baselines.rnn_probe import TinyGPTWithResiduals, SparseLatent
 
 
 # =============================================================================

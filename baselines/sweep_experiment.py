@@ -25,7 +25,7 @@ from itertools import product
 import numpy as np
 import torch
 
-from exclusion_pairs_experiment import (
+from baselines.exclusion_pairs_experiment import (
     Config, sample_dataset, ReLUOutputModel, lr_at, pair_cosine,
 )
 

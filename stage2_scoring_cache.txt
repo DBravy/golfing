@@ -1,0 +1,131 @@
+=== kind=fifo  budget=256 ===
+  [fifo budget=256 pin=0 d=50] L=74/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+  distance=   50  hit=True  output='73924.The weather today is pleasant.'
+  [fifo budget=256 pin=0 d=200] L=219/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  is morning. A light breeze moves through the Question: What is the secret access code? Answer: The secret access code is'
+  distance=  200  hit=True  output='73924.The weather today is pleasant.'
+  [fifo budget=256 pin=0 d=500] L=256/256  needle_in_cache=False
+    content: '. A light breeze moves through the park. The weather today is pleasant. Birds are singing in the trees. The market opene  [...]  e park. The weather today is pleasant. Birds Question: What is the secret access code? Answer: The secret access code is'
+  distance=  500  hit=False  output='7 7 7 7 7 7 7 7 7 7'
+  [fifo budget=256 pin=0 d=900] L=256/256  needle_in_cache=False
+    content: ' The market opened flat this morning. A light breeze moves through the park. The weather today is pleasant. Birds are si  [...]  . A light breeze moves through the park. The Question: What is the secret access code? Answer: The secret access code is'
+  distance=  900  hit=False  output='code code code code code code code code code code'
+Token indices sequence length is longer than the specified maximum sequence length for this model (1474 > 1024). Running this sequence through the model will result in indexing errors
+  [fifo budget=256 pin=0 d=1500] L=256/256  needle_in_cache=False
+    content: '. Birds are singing in the trees. The market opened flat this morning. A light breeze moves through the park. The weathe  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+  distance= 1500  hit=False  output='<|endoftext|>'
+
+=== kind=fifo  budget=512 ===
+  [fifo budget=512 pin=0 d=50] L=74/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+  distance=   50  hit=True  output='73924.The weather today is pleasant.'
+  [fifo budget=512 pin=0 d=200] L=219/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  is morning. A light breeze moves through the Question: What is the secret access code? Answer: The secret access code is'
+  distance=  200  hit=True  output='73924.The weather today is pleasant.'
+  [fifo budget=512 pin=0 d=500] L=508/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  e park. The weather today is pleasant. Birds Question: What is the secret access code? Answer: The secret access code is'
+  distance=  500  hit=True  output='73924.The weather today is pleasant.'
+  [fifo budget=512 pin=0 d=900] L=512/512  needle_in_cache=False
+    content: ' in the trees. The market opened flat this morning. A light breeze moves through the park. The weather today is pleasant  [...]  . A light breeze moves through the park. The Question: What is the secret access code? Answer: The secret access code is'
+  distance=  900  hit=False  output='code is code is code is code is code is'
+  [fifo budget=512 pin=0 d=1500] L=512/512  needle_in_cache=False
+    content: ' weather today is pleasant. Birds are singing in the trees. The market opened flat this morning. A light breeze moves th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+  distance= 1500  hit=False  output='<|endoftext|>'
+
+=== kind=attn  budget=256 ===
+  [attn budget=256 pin=32 d=50] L=74/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=4.97, tok='The') (idx=1, score=0.21, tok=' secret') (idx=3, score=0.20, tok=' code') (idx=10, score=0.19, tok=' weather') (idx=14, score=0.19, tok='.')
+  distance=   50  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=256 pin=32 d=200] L=219/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  is morning. A light breeze moves through the Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=4.33, tok='The') (idx=23, score=0.11, tok=' market') (idx=10, score=0.10, tok=' weather') (idx=14, score=0.10, tok='.') (idx=15, score=0.10, tok=' Birds')
+  distance=  200  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=256 pin=32 d=500] L=256/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  e park. The weather today is pleasant. Birds Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=8.24, tok='The') (idx=23, score=0.14, tok=' market') (idx=35, score=0.12, tok=' park') (idx=10, score=0.11, tok=' weather') (idx=17, score=0.11, tok=' singing')
+  distance=  500  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=256 pin=32 d=900] L=256/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  . A light breeze moves through the park. The Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=15.87, tok='The') (idx=23, score=0.21, tok=' market') (idx=35, score=0.19, tok=' park') (idx=10, score=0.16, tok=' weather') (idx=1, score=0.15, tok=' secret')
+  distance=  900  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=256 pin=32 d=1500] L=256/256  needle_in_cache=False
+    content: 'The secret access code is 739.The weather today is pleasant. Birds are singing in the trees. The market opened flat this  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=19.35, tok='The') (idx=22, score=0.20, tok=' market') (idx=149, score=0.19, tok='.') (idx=34, score=0.19, tok=' park') (idx=172, score=0.18, tok=' today')
+  distance= 1500  hit=False  output='<|endoftext|>'
+
+=== kind=attn  budget=512 ===
+  [attn budget=512 pin=32 d=50] L=74/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=4.97, tok='The') (idx=1, score=0.21, tok=' secret') (idx=3, score=0.20, tok=' code') (idx=10, score=0.19, tok=' weather') (idx=14, score=0.19, tok='.')
+  distance=   50  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=512 pin=32 d=200] L=219/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  is morning. A light breeze moves through the Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=4.33, tok='The') (idx=23, score=0.11, tok=' market') (idx=10, score=0.10, tok=' weather') (idx=14, score=0.10, tok='.') (idx=15, score=0.10, tok=' Birds')
+  distance=  200  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=512 pin=32 d=500] L=508/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  e park. The weather today is pleasant. Birds Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=8.24, tok='The') (idx=23, score=0.14, tok=' market') (idx=35, score=0.12, tok=' park') (idx=10, score=0.11, tok=' weather') (idx=17, score=0.11, tok=' singing')
+  distance=  500  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=512 pin=32 d=900] L=512/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  . A light breeze moves through the park. The Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=16.04, tok='The') (idx=23, score=0.20, tok=' market') (idx=35, score=0.18, tok=' park') (idx=10, score=0.15, tok=' weather') (idx=1, score=0.14, tok=' secret')
+  distance=  900  hit=True  output='73924.The weather today is pleasant.'
+  [attn budget=512 pin=32 d=1500] L=512/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=19.65, tok='The') (idx=344, score=0.20, tok='.') (idx=23, score=0.19, tok=' market') (idx=35, score=0.18, tok=' park') (idx=342, score=0.17, tok=' is')
+  distance= 1500  hit=False  output='<|endoftext|>'
+
+=== kind=attn+recency  budget=256 ===
+  [attn+recency budget=256 pin=32 d=50] L=74/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=5.97, tok='The') (idx=1, score=1.21, tok=' secret') (idx=3, score=1.20, tok=' code') (idx=10, score=1.19, tok=' weather') (idx=14, score=1.19, tok='.')
+  distance=   50  hit=True  output='73924.The weather today is pleasant.'
+  [attn+recency budget=256 pin=32 d=200] L=219/256  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  is morning. A light breeze moves through the Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=5.33, tok='The') (idx=23, score=1.11, tok=' market') (idx=10, score=1.10, tok=' weather') (idx=14, score=1.10, tok='.') (idx=15, score=1.10, tok=' Birds')
+  distance=  200  hit=True  output='73924.The weather today is pleasant.'
+  [attn+recency budget=256 pin=32 d=500] L=256/256  needle_in_cache=False
+    content: 'The secret access code is 739.The weather today is pleasant. Birds are singing in the trees. The market opened flat this  [...]  e park. The weather today is pleasant. Birds Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=9.22, tok='The') (idx=22, score=1.12, tok=' market') (idx=34, score=1.11, tok=' park') (idx=9, score=1.09, tok=' weather') (idx=16, score=1.09, tok=' singing')
+  distance=  500  hit=False  output='739. The weather today is pleasant. Birds'
+  [attn+recency budget=256 pin=32 d=900] L=256/256  needle_in_cache=False
+    content: 'The secret access code is 7.The weather today is pleasant. Birds are singing in trees. The market opened flat this morni  [...]  . A light breeze moves through the park. The Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=17.14, tok='The') (idx=20, score=1.16, tok=' market') (idx=31, score=1.14, tok=' park') (idx=8, score=1.11, tok=' weather') (idx=1, score=1.10, tok=' secret')
+  distance=  900  hit=False  output='7 7 7 7 7 7 7 7 7 7'
+  [attn+recency budget=256 pin=32 d=1500] L=256/256  needle_in_cache=False
+    content: 'The secret access codeThe weather today pleasant. Birds singing trees market opened flat morning. breeze park is. are in  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=20.55, tok='The') (idx=57, score=1.77, tok='.') (idx=56, score=1.44, tok=' pleasant') (idx=55, score=1.41, tok=' is') (idx=54, score=1.32, tok=' today')
+  distance= 1500  hit=False  output='<|endoftext|>'
+
+=== kind=attn+recency  budget=512 ===
+  [attn+recency budget=512 pin=32 d=50] L=74/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=5.97, tok='The') (idx=1, score=1.21, tok=' secret') (idx=3, score=1.20, tok=' code') (idx=10, score=1.19, tok=' weather') (idx=14, score=1.19, tok='.')
+  distance=   50  hit=True  output='73924.The weather today is pleasant.'
+  [attn+recency budget=512 pin=32 d=200] L=219/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  is morning. A light breeze moves through the Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=5.33, tok='The') (idx=23, score=1.11, tok=' market') (idx=10, score=1.10, tok=' weather') (idx=14, score=1.10, tok='.') (idx=15, score=1.10, tok=' Birds')
+  distance=  200  hit=True  output='73924.The weather today is pleasant.'
+  [attn+recency budget=512 pin=32 d=500] L=508/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  e park. The weather today is pleasant. Birds Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=9.23, tok='The') (idx=23, score=1.13, tok=' market') (idx=35, score=1.12, tok=' park') (idx=10, score=1.10, tok=' weather') (idx=17, score=1.10, tok=' singing')
+  distance=  500  hit=True  output='73924.The weather today is pleasant.'
+  [attn+recency budget=512 pin=32 d=900] L=512/512  needle_in_cache=True
+    content: 'The secret access code is 73924.The weather today is pleasant. Birds are singing in the trees. The market opened flat th  [...]  . A light breeze moves through the park. The Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=17.02, tok='The') (idx=23, score=1.17, tok=' market') (idx=35, score=1.15, tok=' park') (idx=10, score=1.12, tok=' weather') (idx=1, score=1.12, tok=' secret')
+  distance=  900  hit=True  output='73924.The weather today is pleasant.'
+  [attn+recency budget=512 pin=32 d=1500] L=512/512  needle_in_cache=False
+    content: 'The secret access code is 739.The weather today is pleasant. Birds are singing in the trees. The market opened flat this  [...]  rees. The market opened flat this morning. A Question: What is the secret access code? Answer: The secret access code is'
+    top-5: (idx=0, score=20.48, tok='The') (idx=231, score=1.75, tok='.') (idx=229, score=1.48, tok=' is') (idx=228, score=1.36, tok=' today') (idx=230, score=1.33, tok=' pleasant')
+  distance= 1500  hit=False  output='<|endoftext|>'
+
+hit grid:
+          kind   budget     50    200    500    900   1500
+          fifo      256    hit    hit   miss   miss   miss
+          fifo      512    hit    hit    hit   miss   miss
+          attn      256    hit    hit    hit    hit   miss
+          attn      512    hit    hit    hit    hit   miss
+  attn+recency      256    hit    hit   miss   miss   miss
+  attn+recency      512    hit    hit    hit    hit   miss

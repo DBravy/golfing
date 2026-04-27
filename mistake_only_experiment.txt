@@ -1,0 +1,522 @@
+WITHOUT NOISE PRETRAINING
+
+Model config: {'vocab_size': 65, 'block_size': 128, 'n_layer': 4, 'n_head': 4, 'n_embd': 128, 'dropout': 0.1}
+Train config: {'n_steps': 6000, 'batch_size': 64, 'lr': 0.0003, 'weight_decay': 0.01, 'grad_clip': 1.0, 'eval_every': 250, 'eval_batches': 20}
+
+======================================================================
+Run 1: Baseline (standard cross-entropy on all tokens)
+======================================================================
+/home/dbrayjr5/miniconda3/envs/noise/lib/python3.10/site-packages/torch/cuda/__init__.py:1061: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+[     baseline] step     1 | train 81.4730 | val_ce 82.7291 | ppl 848759886879739428812196148343209984.00 | acc 0.0267 | ece 0.9733 | H 0.000 | miss_frac 0.978
+[     baseline] step   250 | train  2.6562 | val_ce 2.6322 | ppl  13.90 | acc 0.2575 | ece 0.0173 | H 2.584 | miss_frac 0.770
+[     baseline] step   500 | train  2.5429 | val_ce 2.5184 | ppl  12.41 | acc 0.2669 | ece 0.0221 | H 2.485 | miss_frac 0.741
+[     baseline] step   750 | train  2.4947 | val_ce 2.4816 | ppl  11.96 | acc 0.2767 | ece 0.0307 | H 2.412 | miss_frac 0.731
+[     baseline] step  1000 | train  2.4375 | val_ce 2.4306 | ppl  11.37 | acc 0.2896 | ece 0.0079 | H 2.408 | miss_frac 0.719
+[     baseline] step  1250 | train  2.4084 | val_ce 2.3655 | ppl  10.65 | acc 0.3078 | ece 0.0160 | H 2.327 | miss_frac 0.704
+[     baseline] step  1500 | train  2.3116 | val_ce 2.2909 | ppl   9.88 | acc 0.3286 | ece 0.0206 | H 2.221 | miss_frac 0.684
+[     baseline] step  1750 | train  2.2278 | val_ce 2.2092 | ppl   9.11 | acc 0.3484 | ece 0.0181 | H 2.161 | miss_frac 0.663
+[     baseline] step  2000 | train  2.1873 | val_ce 2.1476 | ppl   8.56 | acc 0.3649 | ece 0.0173 | H 2.108 | miss_frac 0.643
+[     baseline] step  2250 | train  2.0954 | val_ce 2.0939 | ppl   8.12 | acc 0.3788 | ece 0.0203 | H 2.030 | miss_frac 0.625
+[     baseline] step  2500 | train  2.0478 | val_ce 2.0453 | ppl   7.73 | acc 0.3907 | ece 0.0306 | H 1.964 | miss_frac 0.611
+[     baseline] step  2750 | train  2.0262 | val_ce 2.0152 | ppl   7.50 | acc 0.3993 | ece 0.0314 | H 1.912 | miss_frac 0.598
+[     baseline] step  3000 | train  1.9599 | val_ce 1.9830 | ppl   7.26 | acc 0.4083 | ece 0.0402 | H 1.862 | miss_frac 0.587
+[     baseline] step  3250 | train  1.9573 | val_ce 1.9533 | ppl   7.05 | acc 0.4181 | ece 0.0321 | H 1.849 | miss_frac 0.575
+[     baseline] step  3500 | train  1.8962 | val_ce 1.9266 | ppl   6.87 | acc 0.4247 | ece 0.0342 | H 1.798 | miss_frac 0.566
+[     baseline] step  3750 | train  1.8569 | val_ce 1.8969 | ppl   6.67 | acc 0.4334 | ece 0.0338 | H 1.779 | miss_frac 0.557
+[     baseline] step  4000 | train  1.8601 | val_ce 1.8717 | ppl   6.50 | acc 0.4415 | ece 0.0352 | H 1.735 | miss_frac 0.550
+[     baseline] step  4250 | train  1.8210 | val_ce 1.8557 | ppl   6.40 | acc 0.4474 | ece 0.0361 | H 1.714 | miss_frac 0.541
+[     baseline] step  4500 | train  1.7600 | val_ce 1.8406 | ppl   6.30 | acc 0.4539 | ece 0.0327 | H 1.698 | miss_frac 0.536
+[     baseline] step  4750 | train  1.7390 | val_ce 1.8147 | ppl   6.14 | acc 0.4606 | ece 0.0277 | H 1.694 | miss_frac 0.530
+[     baseline] step  5000 | train  1.7598 | val_ce 1.8010 | ppl   6.06 | acc 0.4652 | ece 0.0341 | H 1.658 | miss_frac 0.525
+[     baseline] step  5250 | train  1.7543 | val_ce 1.7911 | ppl   6.00 | acc 0.4678 | ece 0.0307 | H 1.654 | miss_frac 0.520
+[     baseline] step  5500 | train  1.6894 | val_ce 1.7772 | ppl   5.91 | acc 0.4736 | ece 0.0293 | H 1.647 | miss_frac 0.514
+[     baseline] step  5750 | train  1.6755 | val_ce 1.7611 | ppl   5.82 | acc 0.4764 | ece 0.0335 | H 1.611 | miss_frac 0.510
+[     baseline] step  6000 | train  1.6913 | val_ce 1.7510 | ppl   5.76 | acc 0.4812 | ece 0.0354 | H 1.590 | miss_frac 0.507
+
+======================================================================
+Run 2: Mistake-only backprop
+======================================================================
+/home/dbrayjr5/miniconda3/envs/noise/lib/python3.10/site-packages/torch/cuda/__init__.py:1061: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+[ mistake-only] step     1 | train 83.3450 | val_ce 82.7291 | ppl 848760210655996024252028744970010624.00 | acc 0.0267 | ece 0.9733 | H 0.000 | miss_frac 0.978
+[ mistake-only] step   250 | train  2.9945 | val_ce 2.7001 | ppl  14.88 | acc 0.2319 | ece 0.0607 | H 2.891 | miss_frac 0.804
+[ mistake-only] step   500 | train  2.8911 | val_ce 2.5969 | ppl  13.42 | acc 0.2252 | ece 0.0537 | H 2.795 | miss_frac 0.783
+[ mistake-only] step   750 | train  2.8457 | val_ce 2.5483 | ppl  12.79 | acc 0.2542 | ece 0.0732 | H 2.718 | miss_frac 0.775
+[ mistake-only] step  1000 | train  2.8199 | val_ce 2.5365 | ppl  12.64 | acc 0.2509 | ece 0.0785 | H 2.723 | miss_frac 0.769
+[ mistake-only] step  1250 | train  2.8260 | val_ce 2.5156 | ppl  12.37 | acc 0.2615 | ece 0.0899 | H 2.708 | miss_frac 0.762
+[ mistake-only] step  1500 | train  2.7835 | val_ce 2.4863 | ppl  12.02 | acc 0.2677 | ece 0.0938 | H 2.670 | miss_frac 0.755
+[ mistake-only] step  1750 | train  2.7457 | val_ce 2.4517 | ppl  11.61 | acc 0.2655 | ece 0.0844 | H 2.644 | miss_frac 0.746
+[ mistake-only] step  2000 | train  2.7554 | val_ce 2.4109 | ppl  11.14 | acc 0.2971 | ece 0.1117 | H 2.621 | miss_frac 0.734
+[ mistake-only] step  2250 | train  2.7041 | val_ce 2.3778 | ppl  10.78 | acc 0.3016 | ece 0.1191 | H 2.614 | miss_frac 0.720
+[ mistake-only] step  2500 | train  2.6869 | val_ce 2.3103 | ppl  10.08 | acc 0.3246 | ece 0.1231 | H 2.538 | miss_frac 0.708
+[ mistake-only] step  2750 | train  2.6559 | val_ce 2.2686 | ppl   9.67 | acc 0.3314 | ece 0.1288 | H 2.517 | miss_frac 0.693
+[ mistake-only] step  3000 | train  2.6505 | val_ce 2.2288 | ppl   9.29 | acc 0.3444 | ece 0.1344 | H 2.482 | miss_frac 0.681
+[ mistake-only] step  3250 | train  2.6233 | val_ce 2.2054 | ppl   9.07 | acc 0.3490 | ece 0.1350 | H 2.463 | miss_frac 0.670
+[ mistake-only] step  3500 | train  2.5953 | val_ce 2.1694 | ppl   8.75 | acc 0.3591 | ece 0.1381 | H 2.425 | miss_frac 0.660
+[ mistake-only] step  3750 | train  2.5619 | val_ce 2.1525 | ppl   8.61 | acc 0.3657 | ece 0.1445 | H 2.416 | miss_frac 0.652
+[ mistake-only] step  4000 | train  2.5764 | val_ce 2.1271 | ppl   8.39 | acc 0.3789 | ece 0.1524 | H 2.395 | miss_frac 0.644
+[ mistake-only] step  4250 | train  2.5491 | val_ce 2.1023 | ppl   8.19 | acc 0.3876 | ece 0.1567 | H 2.369 | miss_frac 0.637
+[ mistake-only] step  4500 | train  2.5619 | val_ce 2.0900 | ppl   8.08 | acc 0.3909 | ece 0.1590 | H 2.370 | miss_frac 0.630
+[ mistake-only] step  4750 | train  2.5201 | val_ce 2.0698 | ppl   7.92 | acc 0.3971 | ece 0.1591 | H 2.334 | miss_frac 0.624
+[ mistake-only] step  5000 | train  2.5265 | val_ce 2.0563 | ppl   7.82 | acc 0.3923 | ece 0.1537 | H 2.334 | miss_frac 0.618
+[ mistake-only] step  5250 | train  2.5179 | val_ce 2.0531 | ppl   7.79 | acc 0.3951 | ece 0.1573 | H 2.330 | miss_frac 0.613
+[ mistake-only] step  5500 | train  2.5047 | val_ce 2.0311 | ppl   7.62 | acc 0.3975 | ece 0.1524 | H 2.307 | miss_frac 0.608
+[ mistake-only] step  5750 | train  2.4786 | val_ce 2.0153 | ppl   7.50 | acc 0.4068 | ece 0.1599 | H 2.289 | miss_frac 0.603
+[ mistake-only] step  6000 | train  2.5061 | val_ce 2.0025 | ppl   7.41 | acc 0.4177 | ece 0.1682 | H 2.281 | miss_frac 0.599
+
+======================================================================
+FINAL COMPARISON (lower is better except accuracy)
+======================================================================
+Metric                     Baseline   Mistake-only        Delta
+--------------------------------------------------------------
+val_ce (loss)                1.7510         2.0025      +0.2516
+perplexity                   5.7602         7.4078      +1.6476
+top-1 accuracy               0.4812         0.4177      -0.0635
+Brier score                  0.6482         0.7693      +0.1211
+entropy (nats)               1.5898         2.2810      +0.6913
+ECE                          0.0354         0.1682      +0.1328
+confidence|correct           0.6717         0.3081      -0.3636
+confidence|wrong             0.3727         0.2075      -0.1652
+
+Reference uniform entropy for vocab=65: 4.174 nats
+
+----------------------------------------------------------------------------------------------------------------------------
+
+
+WITH NOISE PRETRAINING
+
+python mistake_only_experiment.py --n_steps 6000
+
+======================================================================
+Phase 0: Gaussian embedding-noise pretraining (std=1.0)
+======================================================================
+  [noise-pretrain] step     1/500 | loss 26.6190 (chance=4.174) | std=1.00 | 0.5s
+  [noise-pretrain] step   100/500 | loss 4.3730 (chance=4.174) | std=1.00 | 3.2s
+  [noise-pretrain] step   200/500 | loss 4.2273 (chance=4.174) | std=1.00 | 6.0s
+  [noise-pretrain] step   300/500 | loss 4.2013 (chance=4.174) | std=1.00 | 8.8s
+  [noise-pretrain] step   400/500 | loss 4.1983 (chance=4.174) | std=1.00 | 11.6s
+  [noise-pretrain] step   500/500 | loss 4.1914 (chance=4.174) | std=1.00 | 14.4s
+  done.
+
+======================================================================
+Phase 1: Baseline (standard cross-entropy)
+======================================================================
+[     baseline] step     1 | train  4.2284 | val_ce 3.8354 | ppl  46.31 | acc 0.1124 | ece 0.0770 | H 4.078 | miss 0.977
+[     baseline] step   250 | train  2.5776 | val_ce 2.5627 | ppl  12.97 | acc 0.2611 | ece 0.0204 | H 2.503 | miss 0.754
+[     baseline] step   500 | train  2.5034 | val_ce 2.4838 | ppl  11.99 | acc 0.2749 | ece 0.0220 | H 2.418 | miss 0.732
+[     baseline] step   750 | train  2.4374 | val_ce 2.4239 | ppl  11.29 | acc 0.2904 | ece 0.0218 | H 2.352 | miss 0.717
+[     baseline] step  1000 | train  2.3636 | val_ce 2.3325 | ppl  10.30 | acc 0.3156 | ece 0.0177 | H 2.272 | miss 0.700
+[     baseline] step  1250 | train  2.3249 | val_ce 2.2575 | ppl   9.56 | acc 0.3375 | ece 0.0165 | H 2.219 | miss 0.681
+[     baseline] step  1500 | train  2.2282 | val_ce 2.2016 | ppl   9.04 | acc 0.3545 | ece 0.0280 | H 2.115 | miss 0.659
+[     baseline] step  1750 | train  2.1564 | val_ce 2.1422 | ppl   8.52 | acc 0.3719 | ece 0.0182 | H 2.064 | miss 0.642
+[     baseline] step  2000 | train  2.1277 | val_ce 2.0988 | ppl   8.16 | acc 0.3804 | ece 0.0289 | H 1.995 | miss 0.624
+[     baseline] step  2250 | train  2.0358 | val_ce 2.0473 | ppl   7.75 | acc 0.3931 | ece 0.0221 | H 1.973 | miss 0.608
+[     baseline] step  2500 | train  1.9838 | val_ce 2.0163 | ppl   7.51 | acc 0.4032 | ece 0.0465 | H 1.857 | miss 0.596
+[     baseline] step  2750 | train  1.9621 | val_ce 1.9788 | ppl   7.23 | acc 0.4125 | ece 0.0342 | H 1.858 | miss 0.583
+[     baseline] step  3000 | train  1.8952 | val_ce 1.9523 | ppl   7.04 | acc 0.4222 | ece 0.0411 | H 1.809 | miss 0.573
+[     baseline] step  3250 | train  1.9248 | val_ce 1.9250 | ppl   6.86 | acc 0.4299 | ece 0.0335 | H 1.806 | miss 0.562
+[     baseline] step  3500 | train  1.8383 | val_ce 1.8961 | ppl   6.66 | acc 0.4361 | ece 0.0346 | H 1.763 | miss 0.553
+[     baseline] step  3750 | train  1.8189 | val_ce 1.8787 | ppl   6.55 | acc 0.4425 | ece 0.0348 | H 1.741 | miss 0.545
+[     baseline] step  4000 | train  1.8232 | val_ce 1.8594 | ppl   6.42 | acc 0.4493 | ece 0.0355 | H 1.713 | miss 0.538
+[     baseline] step  4250 | train  1.7920 | val_ce 1.8379 | ppl   6.28 | acc 0.4553 | ece 0.0318 | H 1.704 | miss 0.531
+[     baseline] step  4500 | train  1.7396 | val_ce 1.8353 | ppl   6.27 | acc 0.4586 | ece 0.0425 | H 1.656 | miss 0.527
+[     baseline] step  4750 | train  1.7114 | val_ce 1.8194 | ppl   6.17 | acc 0.4639 | ece 0.0397 | H 1.648 | miss 0.522
+[     baseline] step  5000 | train  1.7369 | val_ce 1.8015 | ppl   6.06 | acc 0.4681 | ece 0.0389 | H 1.634 | miss 0.517
+[     baseline] step  5250 | train  1.7250 | val_ce 1.7934 | ppl   6.01 | acc 0.4726 | ece 0.0372 | H 1.635 | miss 0.513
+[     baseline] step  5500 | train  1.6613 | val_ce 1.7786 | ppl   5.92 | acc 0.4755 | ece 0.0354 | H 1.621 | miss 0.508
+[     baseline] step  5750 | train  1.6630 | val_ce 1.7588 | ppl   5.81 | acc 0.4772 | ece 0.0310 | H 1.620 | miss 0.505
+[     baseline] step  6000 | train  1.6609 | val_ce 1.7575 | ppl   5.80 | acc 0.4809 | ece 0.0418 | H 1.570 | miss 0.501
+
+  Reliability [baseline]
+             bin    count     conf      acc  gap
+    [0.00,0.07]        1    0.066    0.000  -0.066
+    [0.07,0.13]    15116    0.115    0.116  +0.001
+    [0.13,0.20]    14439    0.158    0.165  +0.006
+    [0.20,0.27]     9844    0.235    0.211  -0.024
+    [0.27,0.33]    12915    0.301    0.286  -0.015
+    [0.33,0.40]    14041    0.366    0.331  -0.036
+    [0.40,0.47]    12539    0.432    0.390  -0.043
+    [0.47,0.53]    10568    0.500    0.445  -0.054
+    [0.53,0.60]     9630    0.566    0.502  -0.064
+    [0.60,0.67]     8926    0.633    0.568  -0.065
+    [0.67,0.73]     8573    0.700    0.622  -0.078
+    [0.73,0.80]     8495    0.767    0.709  -0.058
+    [0.80,0.87]     9049    0.833    0.762  -0.072
+    [0.87,0.93]    10067    0.901    0.841  -0.061
+    [0.93,1.00]    19637    0.974    0.919  -0.056
+
+======================================================================
+Phase 2: Mistake-only backprop
+======================================================================
+[ mistake-only] step     1 | train  4.2438 | val_ce 3.8352 | ppl  46.30 | acc 0.1136 | ece 0.0776 | H 4.079 | miss 0.977
+[ mistake-only] step   250 | train  2.9069 | val_ce 2.6248 | ppl  13.80 | acc 0.2416 | ece 0.0708 | H 2.835 | miss 0.791
+[ mistake-only] step   500 | train  2.8387 | val_ce 2.5576 | ppl  12.90 | acc 0.2446 | ece 0.0738 | H 2.747 | miss 0.776
+[ mistake-only] step   750 | train  2.7915 | val_ce 2.5303 | ppl  12.56 | acc 0.2430 | ece 0.0712 | H 2.673 | miss 0.768
+[ mistake-only] step  1000 | train  2.7826 | val_ce 2.4999 | ppl  12.18 | acc 0.2636 | ece 0.0832 | H 2.646 | miss 0.761
+[ mistake-only] step  1250 | train  2.7694 | val_ce 2.4748 | ppl  11.88 | acc 0.2531 | ece 0.0751 | H 2.646 | miss 0.753
+[ mistake-only] step  1500 | train  2.7446 | val_ce 2.4330 | ppl  11.39 | acc 0.2656 | ece 0.0849 | H 2.617 | miss 0.742
+[ mistake-only] step  1750 | train  2.7248 | val_ce 2.3821 | ppl  10.83 | acc 0.2990 | ece 0.1097 | H 2.577 | miss 0.730
+[ mistake-only] step  2000 | train  2.7196 | val_ce 2.3557 | ppl  10.55 | acc 0.2990 | ece 0.1082 | H 2.561 | miss 0.718
+[ mistake-only] step  2250 | train  2.6866 | val_ce 2.3168 | ppl  10.14 | acc 0.3217 | ece 0.1262 | H 2.545 | miss 0.706
+[ mistake-only] step  2500 | train  2.6685 | val_ce 2.2801 | ppl   9.78 | acc 0.3286 | ece 0.1238 | H 2.506 | miss 0.696
+[ mistake-only] step  2750 | train  2.6470 | val_ce 2.2404 | ppl   9.40 | acc 0.3463 | ece 0.1367 | H 2.482 | miss 0.685
+[ mistake-only] step  3000 | train  2.6422 | val_ce 2.2138 | ppl   9.15 | acc 0.3541 | ece 0.1418 | H 2.459 | miss 0.675
+[ mistake-only] step  3250 | train  2.6316 | val_ce 2.1734 | ppl   8.79 | acc 0.3663 | ece 0.1420 | H 2.422 | miss 0.665
+[ mistake-only] step  3500 | train  2.5978 | val_ce 2.1451 | ppl   8.54 | acc 0.3687 | ece 0.1370 | H 2.386 | miss 0.655
+[ mistake-only] step  3750 | train  2.5565 | val_ce 2.1216 | ppl   8.34 | acc 0.3801 | ece 0.1455 | H 2.361 | miss 0.647
+[ mistake-only] step  4000 | train  2.5731 | val_ce 2.1091 | ppl   8.24 | acc 0.3906 | ece 0.1583 | H 2.378 | miss 0.637
+[ mistake-only] step  4250 | train  2.5379 | val_ce 2.0878 | ppl   8.07 | acc 0.3833 | ece 0.1448 | H 2.345 | miss 0.630
+[ mistake-only] step  4500 | train  2.5246 | val_ce 2.0610 | ppl   7.85 | acc 0.4014 | ece 0.1572 | H 2.331 | miss 0.623
+[ mistake-only] step  4750 | train  2.5130 | val_ce 2.0459 | ppl   7.74 | acc 0.4023 | ece 0.1544 | H 2.310 | miss 0.617
+[ mistake-only] step  5000 | train  2.5272 | val_ce 2.0277 | ppl   7.60 | acc 0.4079 | ece 0.1560 | H 2.309 | miss 0.611
+[ mistake-only] step  5250 | train  2.5001 | val_ce 2.0227 | ppl   7.56 | acc 0.4060 | ece 0.1573 | H 2.297 | miss 0.605
+[ mistake-only] step  5500 | train  2.4844 | val_ce 2.0096 | ppl   7.46 | acc 0.4143 | ece 0.1633 | H 2.282 | miss 0.600
+[ mistake-only] step  5750 | train  2.4662 | val_ce 1.9935 | ppl   7.34 | acc 0.4225 | ece 0.1685 | H 2.275 | miss 0.595
+[ mistake-only] step  6000 | train  2.4741 | val_ce 1.9784 | ppl   7.23 | acc 0.4224 | ece 0.1643 | H 2.249 | miss 0.590
+
+  Reliability [mistake-only]
+             bin    count     conf      acc  gap
+    [0.00,0.07]       31    0.063    0.161  +0.098
+    [0.07,0.13]    28963    0.097    0.123  +0.026
+    [0.13,0.20]    30193    0.170    0.295  +0.125
+    [0.20,0.27]    38266    0.234    0.408  +0.174
+    [0.27,0.33]    29253    0.295    0.507  +0.211
+    [0.33,0.40]    14990    0.365    0.634  +0.269
+    [0.40,0.47]     7403    0.429    0.695  +0.266
+    [0.47,0.53]     7567    0.501    0.704  +0.203
+    [0.53,0.60]     4110    0.564    0.871  +0.306
+    [0.60,0.67]     2221    0.627    0.910  +0.283
+    [0.67,0.73]      626    0.694    0.850  +0.155
+    [0.73,0.80]      186    0.762    0.849  +0.087
+    [0.80,0.87]       29    0.825    0.897  +0.072
+    [0.87,0.93]        2    0.888    1.000  +0.112
+
+======================================================================
+FINAL COMPARISON
+======================================================================
+Metric                     Baseline   Mistake-only        Delta
+--------------------------------------------------------------
+val_ce (loss)                1.7575         1.9784      +0.2210
+perplexity                   5.7977         7.2314      +1.4337
+top-1 accuracy               0.4809         0.4224      -0.0585
+Brier score                  0.6485         0.7613      +0.1128
+entropy (nats)               1.5697         2.2485      +0.6789
+ECE                          0.0418         0.1643      +0.1225
+confidence|correct           0.6808         0.3195      -0.3613
+confidence|wrong             0.3739         0.2131      -0.1608
+
+Uniform-entropy reference for vocab=65: 4.174 nats
+
+----------------------------------------------------------------------------------------------------------------------------
+
+python mistake_only_experiment.py --n_steps 10000
+
+======================================================================
+Phase 0: Gaussian embedding-noise pretraining (std=1.0)
+======================================================================
+  [noise-pretrain] step     1/500 | loss 26.6190 (chance=4.174) | std=1.00 | 0.5s
+  [noise-pretrain] step   100/500 | loss 4.3730 (chance=4.174) | std=1.00 | 3.3s
+  [noise-pretrain] step   200/500 | loss 4.2273 (chance=4.174) | std=1.00 | 6.2s
+  [noise-pretrain] step   300/500 | loss 4.2013 (chance=4.174) | std=1.00 | 9.1s
+  [noise-pretrain] step   400/500 | loss 4.1983 (chance=4.174) | std=1.00 | 12.0s
+  [noise-pretrain] step   500/500 | loss 4.1914 (chance=4.174) | std=1.00 | 15.0s
+  done.
+
+======================================================================
+Phase 1: Baseline (standard cross-entropy)
+======================================================================
+[     baseline] step     1 | train  4.2284 | val_ce 3.8354 | ppl  46.31 | acc 0.1124 | ece 0.0770 | H 4.078 | miss 0.977
+[     baseline] step   250 | train  2.5776 | val_ce 2.5627 | ppl  12.97 | acc 0.2611 | ece 0.0204 | H 2.503 | miss 0.754
+[     baseline] step   500 | train  2.5022 | val_ce 2.4844 | ppl  11.99 | acc 0.2742 | ece 0.0233 | H 2.412 | miss 0.732
+[     baseline] step   750 | train  2.4371 | val_ce 2.4236 | ppl  11.29 | acc 0.2904 | ece 0.0221 | H 2.350 | miss 0.717
+[     baseline] step  1000 | train  2.3628 | val_ce 2.3319 | ppl  10.30 | acc 0.3158 | ece 0.0174 | H 2.272 | miss 0.699
+[     baseline] step  1250 | train  2.3241 | val_ce 2.2570 | ppl   9.55 | acc 0.3376 | ece 0.0165 | H 2.217 | miss 0.680
+[     baseline] step  1500 | train  2.2276 | val_ce 2.2006 | ppl   9.03 | acc 0.3546 | ece 0.0280 | H 2.115 | miss 0.659
+[     baseline] step  1750 | train  2.1554 | val_ce 2.1414 | ppl   8.51 | acc 0.3720 | ece 0.0181 | H 2.062 | miss 0.641
+[     baseline] step  2000 | train  2.1267 | val_ce 2.0986 | ppl   8.15 | acc 0.3802 | ece 0.0294 | H 1.993 | miss 0.623
+[     baseline] step  2250 | train  2.0349 | val_ce 2.0471 | ppl   7.75 | acc 0.3932 | ece 0.0225 | H 1.970 | miss 0.608
+[     baseline] step  2500 | train  1.9833 | val_ce 2.0164 | ppl   7.51 | acc 0.4029 | ece 0.0475 | H 1.854 | miss 0.595
+[     baseline] step  2750 | train  1.9613 | val_ce 1.9781 | ppl   7.23 | acc 0.4126 | ece 0.0338 | H 1.859 | miss 0.582
+[     baseline] step  3000 | train  1.8951 | val_ce 1.9517 | ppl   7.04 | acc 0.4221 | ece 0.0409 | H 1.809 | miss 0.572
+[     baseline] step  3250 | train  1.9247 | val_ce 1.9239 | ppl   6.85 | acc 0.4302 | ece 0.0333 | H 1.806 | miss 0.561
+[     baseline] step  3500 | train  1.8382 | val_ce 1.8952 | ppl   6.65 | acc 0.4366 | ece 0.0345 | H 1.761 | miss 0.553
+[     baseline] step  3750 | train  1.8184 | val_ce 1.8773 | ppl   6.54 | acc 0.4430 | ece 0.0342 | H 1.742 | miss 0.545
+[     baseline] step  4000 | train  1.8224 | val_ce 1.8586 | ppl   6.41 | acc 0.4497 | ece 0.0359 | H 1.710 | miss 0.538
+[     baseline] step  4250 | train  1.7917 | val_ce 1.8372 | ppl   6.28 | acc 0.4557 | ece 0.0316 | H 1.704 | miss 0.531
+[     baseline] step  4500 | train  1.7388 | val_ce 1.8350 | ppl   6.27 | acc 0.4589 | ece 0.0426 | H 1.654 | miss 0.527
+[     baseline] step  4750 | train  1.7114 | val_ce 1.8195 | ppl   6.17 | acc 0.4646 | ece 0.0401 | H 1.644 | miss 0.522
+[     baseline] step  5000 | train  1.7357 | val_ce 1.8007 | ppl   6.05 | acc 0.4685 | ece 0.0387 | H 1.635 | miss 0.517
+[     baseline] step  5250 | train  1.7239 | val_ce 1.7932 | ppl   6.01 | acc 0.4723 | ece 0.0374 | H 1.634 | miss 0.513
+[     baseline] step  5500 | train  1.6615 | val_ce 1.7786 | ppl   5.92 | acc 0.4754 | ece 0.0355 | H 1.621 | miss 0.508
+[     baseline] step  5750 | train  1.6620 | val_ce 1.7589 | ppl   5.81 | acc 0.4771 | ece 0.0313 | H 1.620 | miss 0.504
+[     baseline] step  6000 | train  1.6610 | val_ce 1.7570 | ppl   5.79 | acc 0.4808 | ece 0.0417 | H 1.571 | miss 0.501
+[     baseline] step  6250 | train  1.6228 | val_ce 1.7446 | ppl   5.72 | acc 0.4851 | ece 0.0371 | H 1.570 | miss 0.497
+[     baseline] step  6500 | train  1.6417 | val_ce 1.7382 | ppl   5.69 | acc 0.4874 | ece 0.0295 | H 1.587 | miss 0.497
+[     baseline] step  6750 | train  1.5959 | val_ce 1.7402 | ppl   5.70 | acc 0.4885 | ece 0.0484 | H 1.520 | miss 0.490
+[     baseline] step  7000 | train  1.6266 | val_ce 1.7212 | ppl   5.59 | acc 0.4930 | ece 0.0337 | H 1.560 | miss 0.488
+[     baseline] step  7250 | train  1.5650 | val_ce 1.7173 | ppl   5.57 | acc 0.4942 | ece 0.0453 | H 1.522 | miss 0.488
+[     baseline] step  7500 | train  1.5509 | val_ce 1.7103 | ppl   5.53 | acc 0.4991 | ece 0.0324 | H 1.533 | miss 0.484
+[     baseline] step  7750 | train  1.5675 | val_ce 1.7062 | ppl   5.51 | acc 0.4994 | ece 0.0372 | H 1.521 | miss 0.482
+[     baseline] step  8000 | train  1.5882 | val_ce 1.6903 | ppl   5.42 | acc 0.5017 | ece 0.0314 | H 1.523 | miss 0.479
+[     baseline] step  8250 | train  1.5620 | val_ce 1.6865 | ppl   5.40 | acc 0.5048 | ece 0.0297 | H 1.520 | miss 0.477
+[     baseline] step  8500 | train  1.5315 | val_ce 1.6835 | ppl   5.38 | acc 0.5073 | ece 0.0346 | H 1.499 | miss 0.475
+[     baseline] step  8750 | train  1.5385 | val_ce 1.6844 | ppl   5.39 | acc 0.5070 | ece 0.0387 | H 1.484 | miss 0.472
+[     baseline] step  9000 | train  1.5242 | val_ce 1.6820 | ppl   5.38 | acc 0.5087 | ece 0.0410 | H 1.471 | miss 0.471
+[     baseline] step  9250 | train  1.5541 | val_ce 1.6631 | ppl   5.28 | acc 0.5112 | ece 0.0325 | H 1.496 | miss 0.468
+[     baseline] step  9500 | train  1.5112 | val_ce 1.6646 | ppl   5.28 | acc 0.5125 | ece 0.0381 | H 1.478 | miss 0.467
+[     baseline] step  9750 | train  1.5238 | val_ce 1.6611 | ppl   5.27 | acc 0.5152 | ece 0.0367 | H 1.461 | miss 0.467
+[     baseline] step 10000 | train  1.5350 | val_ce 1.6568 | ppl   5.24 | acc 0.5156 | ece 0.0310 | H 1.476 | miss 0.464
+
+  Reliability [baseline]
+             bin    count     conf      acc  gap
+    [0.07,0.13]     9549    0.116    0.097  -0.019
+    [0.13,0.20]    16846    0.164    0.162  -0.002
+    [0.20,0.27]    11251    0.232    0.221  -0.011
+    [0.27,0.33]    11765    0.301    0.283  -0.018
+    [0.33,0.40]    12781    0.366    0.345  -0.022
+    [0.40,0.47]    11196    0.433    0.409  -0.024
+    [0.47,0.53]    10446    0.500    0.472  -0.028
+    [0.53,0.60]     9529    0.566    0.535  -0.031
+    [0.60,0.67]     9068    0.633    0.588  -0.045
+    [0.67,0.73]     8661    0.700    0.659  -0.041
+    [0.73,0.80]     9010    0.767    0.722  -0.045
+    [0.80,0.87]     9100    0.833    0.793  -0.040
+    [0.87,0.93]    10236    0.902    0.849  -0.053
+    [0.93,1.00]    24402    0.978    0.924  -0.054
+
+======================================================================
+Phase 2: Mistake-only backprop
+======================================================================
+[ mistake-only] step     1 | train  4.2451 | val_ce 3.8350 | ppl  46.29 | acc 0.1133 | ece 0.0775 | H 4.079 | miss 0.979
+[ mistake-only] step   250 | train  2.9014 | val_ce 2.6232 | ppl  13.78 | acc 0.2400 | ece 0.0704 | H 2.824 | miss 0.791
+[ mistake-only] step   500 | train  2.8374 | val_ce 2.5623 | ppl  12.97 | acc 0.2335 | ece 0.0652 | H 2.751 | miss 0.776
+[ mistake-only] step   750 | train  2.7986 | val_ce 2.5336 | ppl  12.60 | acc 0.2358 | ece 0.0653 | H 2.686 | miss 0.769
+[ mistake-only] step  1000 | train  2.7743 | val_ce 2.5094 | ppl  12.30 | acc 0.2492 | ece 0.0748 | H 2.658 | miss 0.761
+[ mistake-only] step  1250 | train  2.7722 | val_ce 2.4721 | ppl  11.85 | acc 0.2640 | ece 0.0880 | H 2.656 | miss 0.752
+[ mistake-only] step  1500 | train  2.7369 | val_ce 2.4274 | ppl  11.33 | acc 0.2801 | ece 0.0969 | H 2.609 | miss 0.742
+[ mistake-only] step  1750 | train  2.7260 | val_ce 2.3885 | ppl  10.90 | acc 0.2885 | ece 0.0996 | H 2.583 | miss 0.730
+[ mistake-only] step  2000 | train  2.7091 | val_ce 2.3537 | ppl  10.52 | acc 0.3092 | ece 0.1150 | H 2.555 | miss 0.718
+[ mistake-only] step  2250 | train  2.6709 | val_ce 2.3121 | ppl  10.10 | acc 0.3232 | ece 0.1239 | H 2.532 | miss 0.706
+[ mistake-only] step  2500 | train  2.6702 | val_ce 2.2761 | ppl   9.74 | acc 0.3310 | ece 0.1216 | H 2.500 | miss 0.696
+[ mistake-only] step  2750 | train  2.6452 | val_ce 2.2434 | ppl   9.43 | acc 0.3458 | ece 0.1375 | H 2.483 | miss 0.685
+[ mistake-only] step  3000 | train  2.6410 | val_ce 2.2044 | ppl   9.06 | acc 0.3521 | ece 0.1342 | H 2.440 | miss 0.675
+[ mistake-only] step  3250 | train  2.6084 | val_ce 2.1743 | ppl   8.80 | acc 0.3647 | ece 0.1415 | H 2.429 | miss 0.664
+[ mistake-only] step  3500 | train  2.5726 | val_ce 2.1391 | ppl   8.49 | acc 0.3697 | ece 0.1372 | H 2.380 | miss 0.654
+[ mistake-only] step  3750 | train  2.5576 | val_ce 2.1143 | ppl   8.28 | acc 0.3844 | ece 0.1477 | H 2.351 | miss 0.646
+[ mistake-only] step  4000 | train  2.5651 | val_ce 2.0933 | ppl   8.11 | acc 0.3934 | ece 0.1546 | H 2.357 | miss 0.637
+[ mistake-only] step  4250 | train  2.5351 | val_ce 2.0753 | ppl   7.97 | acc 0.3921 | ece 0.1525 | H 2.345 | miss 0.627
+[ mistake-only] step  4500 | train  2.5203 | val_ce 2.0479 | ppl   7.75 | acc 0.4042 | ece 0.1563 | H 2.310 | miss 0.620
+[ mistake-only] step  4750 | train  2.5023 | val_ce 2.0300 | ppl   7.61 | acc 0.4108 | ece 0.1625 | H 2.309 | miss 0.612
+[ mistake-only] step  5000 | train  2.5154 | val_ce 2.0120 | ppl   7.48 | acc 0.4055 | ece 0.1508 | H 2.288 | miss 0.606
+[ mistake-only] step  5250 | train  2.4908 | val_ce 2.0122 | ppl   7.48 | acc 0.4131 | ece 0.1643 | H 2.298 | miss 0.600
+[ mistake-only] step  5500 | train  2.4785 | val_ce 1.9980 | ppl   7.37 | acc 0.4128 | ece 0.1597 | H 2.283 | miss 0.594
+[ mistake-only] step  5750 | train  2.4637 | val_ce 1.9814 | ppl   7.25 | acc 0.4223 | ece 0.1668 | H 2.272 | miss 0.590
+[ mistake-only] step  6000 | train  2.4892 | val_ce 1.9632 | ppl   7.12 | acc 0.4272 | ece 0.1659 | H 2.236 | miss 0.585
+[ mistake-only] step  6250 | train  2.4790 | val_ce 1.9566 | ppl   7.08 | acc 0.4270 | ece 0.1639 | H 2.228 | miss 0.580
+[ mistake-only] step  6500 | train  2.4513 | val_ce 1.9479 | ppl   7.01 | acc 0.4393 | ece 0.1799 | H 2.238 | miss 0.579
+[ mistake-only] step  6750 | train  2.4405 | val_ce 1.9306 | ppl   6.89 | acc 0.4373 | ece 0.1683 | H 2.208 | miss 0.572
+[ mistake-only] step  7000 | train  2.4436 | val_ce 1.9196 | ppl   6.82 | acc 0.4416 | ece 0.1707 | H 2.192 | miss 0.569
+[ mistake-only] step  7250 | train  2.4129 | val_ce 1.9208 | ppl   6.83 | acc 0.4389 | ece 0.1706 | H 2.204 | miss 0.567
+[ mistake-only] step  7500 | train  2.3902 | val_ce 1.9058 | ppl   6.72 | acc 0.4439 | ece 0.1712 | H 2.177 | miss 0.563
+[ mistake-only] step  7750 | train  2.3984 | val_ce 1.9001 | ppl   6.69 | acc 0.4436 | ece 0.1672 | H 2.166 | miss 0.561
+[ mistake-only] step  8000 | train  2.4263 | val_ce 1.8905 | ppl   6.62 | acc 0.4500 | ece 0.1751 | H 2.171 | miss 0.559
+[ mistake-only] step  8250 | train  2.4114 | val_ce 1.8845 | ppl   6.58 | acc 0.4479 | ece 0.1709 | H 2.164 | miss 0.556
+[ mistake-only] step  8500 | train  2.3711 | val_ce 1.8692 | ppl   6.48 | acc 0.4586 | ece 0.1778 | H 2.141 | miss 0.553
+[ mistake-only] step  8750 | train  2.3889 | val_ce 1.8633 | ppl   6.45 | acc 0.4616 | ece 0.1794 | H 2.141 | miss 0.549
+[ mistake-only] step  9000 | train  2.4003 | val_ce 1.8680 | ppl   6.48 | acc 0.4519 | ece 0.1702 | H 2.144 | miss 0.548
+[ mistake-only] step  9250 | train  2.3964 | val_ce 1.8594 | ppl   6.42 | acc 0.4579 | ece 0.1760 | H 2.133 | miss 0.544
+[ mistake-only] step  9500 | train  2.3727 | val_ce 1.8516 | ppl   6.37 | acc 0.4569 | ece 0.1741 | H 2.130 | miss 0.545
+[ mistake-only] step  9750 | train  2.3868 | val_ce 1.8383 | ppl   6.29 | acc 0.4640 | ece 0.1746 | H 2.106 | miss 0.543
+[ mistake-only] step 10000 | train  2.3715 | val_ce 1.8392 | ppl   6.29 | acc 0.4654 | ece 0.1782 | H 2.112 | miss 0.540
+
+  Reliability [mistake-only]
+             bin    count     conf      acc  gap
+    [0.00,0.07]       48    0.061    0.000  -0.061
+    [0.07,0.13]    29058    0.098    0.132  +0.034
+    [0.13,0.20]    19258    0.172    0.300  +0.128
+    [0.20,0.27]    34381    0.234    0.395  +0.161
+    [0.27,0.33]    30293    0.297    0.519  +0.222
+    [0.33,0.40]    16388    0.364    0.637  +0.273
+    [0.40,0.47]    11254    0.432    0.696  +0.264
+    [0.47,0.53]    11677    0.499    0.751  +0.252
+    [0.53,0.60]     5324    0.563    0.877  +0.314
+    [0.60,0.67]     3321    0.630    0.922  +0.293
+    [0.67,0.73]     1586    0.697    0.904  +0.207
+    [0.73,0.80]      718    0.762    0.855  +0.093
+    [0.80,0.87]      336    0.829    0.955  +0.126
+    [0.87,0.93]      179    0.893    1.000  +0.107
+    [0.93,1.00]       19    0.945    1.000  +0.055
+
+======================================================================
+FINAL COMPARISON
+======================================================================
+Metric                     Baseline   Mistake-only        Delta
+--------------------------------------------------------------
+val_ce (loss)                1.6568         1.8392      +0.1824
+perplexity                   5.2423         6.2913      +1.0490
+top-1 accuracy               0.5156         0.4654      -0.0502
+Brier score                  0.6106         0.7241      +0.1136
+entropy (nats)               1.4756         2.1120      +0.6364
+ECE                          0.0310         0.1782      +0.1472
+confidence|correct           0.7032         0.3584      -0.3448
+confidence|wrong             0.3800         0.2252      -0.1548
+
+Uniform-entropy reference for vocab=65: 4.174 nats
+
+----------------------------------------------------------------------------------------------------------------------------
+
+python mistake_only_experiment.py --n_steps 10000 | tracking mistake and normal loss
+
+======================================================================
+Phase 0: Gaussian embedding-noise pretraining (std=1.0)
+======================================================================
+  [noise-pretrain] step     1/500 | loss 26.6190 (chance=4.174) | std=1.00 | 0.5s
+  [noise-pretrain] step   100/500 | loss 4.3730 (chance=4.174) | std=1.00 | 3.2s
+  [noise-pretrain] step   200/500 | loss 4.2273 (chance=4.174) | std=1.00 | 6.0s
+  [noise-pretrain] step   300/500 | loss 4.2013 (chance=4.174) | std=1.00 | 8.8s
+  [noise-pretrain] step   400/500 | loss 4.1983 (chance=4.174) | std=1.00 | 11.6s
+  [noise-pretrain] step   500/500 | loss 4.1914 (chance=4.174) | std=1.00 | 14.4s
+  done.
+
+======================================================================
+Phase 1: Baseline (standard cross-entropy)
+======================================================================
+[     baseline] step     1 | tr_full  4.2284 | tr_mis  4.2454 | val_ce 3.8354 | ppl  46.31 | acc 0.1124 | ece 0.0770 | H 4.078 | miss 0.977
+[     baseline] step   250 | tr_full  2.5776 | tr_mis  3.0264 | val_ce 2.5627 | ppl  12.97 | acc 0.2611 | ece 0.0204 | H 2.503 | miss 0.754
+[     baseline] step   500 | tr_full  2.5021 | tr_mis  3.0012 | val_ce 2.4843 | ppl  11.99 | acc 0.2742 | ece 0.0233 | H 2.412 | miss 0.732
+[     baseline] step   750 | tr_full  2.4372 | tr_mis  2.9794 | val_ce 2.4237 | ppl  11.29 | acc 0.2905 | ece 0.0220 | H 2.350 | miss 0.717
+[     baseline] step  1000 | tr_full  2.3630 | tr_mis  2.9435 | val_ce 2.3321 | ppl  10.30 | acc 0.3158 | ece 0.0174 | H 2.272 | miss 0.699
+[     baseline] step  1250 | tr_full  2.3243 | tr_mis  2.9479 | val_ce 2.2571 | ppl   9.56 | acc 0.3376 | ece 0.0165 | H 2.217 | miss 0.680
+[     baseline] step  1500 | tr_full  2.2278 | tr_mis  2.9411 | val_ce 2.2009 | ppl   9.03 | acc 0.3545 | ece 0.0283 | H 2.115 | miss 0.659
+[     baseline] step  1750 | tr_full  2.1557 | tr_mis  2.9008 | val_ce 2.1415 | ppl   8.51 | acc 0.3719 | ece 0.0182 | H 2.062 | miss 0.641
+[     baseline] step  2000 | tr_full  2.1268 | tr_mis  2.9236 | val_ce 2.0988 | ppl   8.16 | acc 0.3803 | ece 0.0294 | H 1.992 | miss 0.624
+[     baseline] step  2250 | tr_full  2.0349 | tr_mis  2.8615 | val_ce 2.0472 | ppl   7.75 | acc 0.3932 | ece 0.0225 | H 1.970 | miss 0.608
+[     baseline] step  2500 | tr_full  1.9833 | tr_mis  2.8617 | val_ce 2.0165 | ppl   7.51 | acc 0.4030 | ece 0.0472 | H 1.855 | miss 0.595
+[     baseline] step  2750 | tr_full  1.9613 | tr_mis  2.8569 | val_ce 1.9781 | ppl   7.23 | acc 0.4125 | ece 0.0338 | H 1.859 | miss 0.582
+[     baseline] step  3000 | tr_full  1.8950 | tr_mis  2.8540 | val_ce 1.9518 | ppl   7.04 | acc 0.4220 | ece 0.0410 | H 1.809 | miss 0.572
+[     baseline] step  3250 | tr_full  1.9247 | tr_mis  2.8730 | val_ce 1.9238 | ppl   6.85 | acc 0.4303 | ece 0.0333 | H 1.806 | miss 0.561
+[     baseline] step  3500 | tr_full  1.8383 | tr_mis  2.7976 | val_ce 1.8950 | ppl   6.65 | acc 0.4366 | ece 0.0345 | H 1.762 | miss 0.553
+[     baseline] step  3750 | tr_full  1.8183 | tr_mis  2.8133 | val_ce 1.8773 | ppl   6.54 | acc 0.4430 | ece 0.0344 | H 1.741 | miss 0.545
+[     baseline] step  4000 | tr_full  1.8223 | tr_mis  2.7912 | val_ce 1.8583 | ppl   6.41 | acc 0.4497 | ece 0.0357 | H 1.710 | miss 0.538
+[     baseline] step  4250 | tr_full  1.7918 | tr_mis  2.8125 | val_ce 1.8370 | ppl   6.28 | acc 0.4556 | ece 0.0317 | H 1.704 | miss 0.531
+[     baseline] step  4500 | tr_full  1.7388 | tr_mis  2.8031 | val_ce 1.8348 | ppl   6.26 | acc 0.4589 | ece 0.0428 | H 1.654 | miss 0.527
+[     baseline] step  4750 | tr_full  1.7112 | tr_mis  2.7860 | val_ce 1.8193 | ppl   6.17 | acc 0.4646 | ece 0.0400 | H 1.644 | miss 0.522
+[     baseline] step  5000 | tr_full  1.7357 | tr_mis  2.8113 | val_ce 1.8006 | ppl   6.05 | acc 0.4687 | ece 0.0386 | H 1.634 | miss 0.517
+[     baseline] step  5250 | tr_full  1.7239 | tr_mis  2.8191 | val_ce 1.7928 | ppl   6.01 | acc 0.4723 | ece 0.0375 | H 1.635 | miss 0.513
+[     baseline] step  5500 | tr_full  1.6614 | tr_mis  2.7486 | val_ce 1.7783 | ppl   5.92 | acc 0.4755 | ece 0.0353 | H 1.621 | miss 0.508
+[     baseline] step  5750 | tr_full  1.6618 | tr_mis  2.7256 | val_ce 1.7586 | ppl   5.80 | acc 0.4771 | ece 0.0314 | H 1.619 | miss 0.504
+[     baseline] step  6000 | tr_full  1.6611 | tr_mis  2.8065 | val_ce 1.7568 | ppl   5.79 | acc 0.4811 | ece 0.0415 | H 1.570 | miss 0.501
+[     baseline] step  6250 | tr_full  1.6229 | tr_mis  2.7710 | val_ce 1.7446 | ppl   5.72 | acc 0.4850 | ece 0.0372 | H 1.569 | miss 0.497
+[     baseline] step  6500 | tr_full  1.6417 | tr_mis  2.7499 | val_ce 1.7382 | ppl   5.69 | acc 0.4874 | ece 0.0294 | H 1.587 | miss 0.497
+[     baseline] step  6750 | tr_full  1.5955 | tr_mis  2.7483 | val_ce 1.7402 | ppl   5.70 | acc 0.4883 | ece 0.0488 | H 1.519 | miss 0.490
+[     baseline] step  7000 | tr_full  1.6264 | tr_mis  2.7390 | val_ce 1.7214 | ppl   5.59 | acc 0.4928 | ece 0.0342 | H 1.559 | miss 0.488
+[     baseline] step  7250 | tr_full  1.5649 | tr_mis  2.7344 | val_ce 1.7171 | ppl   5.57 | acc 0.4941 | ece 0.0455 | H 1.522 | miss 0.488
+[     baseline] step  7500 | tr_full  1.5508 | tr_mis  2.7055 | val_ce 1.7103 | ppl   5.53 | acc 0.4992 | ece 0.0322 | H 1.533 | miss 0.484
+[     baseline] step  7750 | tr_full  1.5676 | tr_mis  2.7406 | val_ce 1.7061 | ppl   5.51 | acc 0.4994 | ece 0.0374 | H 1.520 | miss 0.482
+[     baseline] step  8000 | tr_full  1.5882 | tr_mis  2.7427 | val_ce 1.6899 | ppl   5.42 | acc 0.5017 | ece 0.0316 | H 1.522 | miss 0.479
+[     baseline] step  8250 | tr_full  1.5616 | tr_mis  2.7358 | val_ce 1.6863 | ppl   5.40 | acc 0.5050 | ece 0.0296 | H 1.520 | miss 0.477
+[     baseline] step  8500 | tr_full  1.5320 | tr_mis  2.7089 | val_ce 1.6835 | ppl   5.38 | acc 0.5072 | ece 0.0345 | H 1.499 | miss 0.475
+[     baseline] step  8750 | tr_full  1.5387 | tr_mis  2.7212 | val_ce 1.6841 | ppl   5.39 | acc 0.5072 | ece 0.0387 | H 1.483 | miss 0.472
+[     baseline] step  9000 | tr_full  1.5241 | tr_mis  2.7524 | val_ce 1.6818 | ppl   5.38 | acc 0.5082 | ece 0.0416 | H 1.471 | miss 0.471
+[     baseline] step  9250 | tr_full  1.5540 | tr_mis  2.7397 | val_ce 1.6626 | ppl   5.27 | acc 0.5111 | ece 0.0328 | H 1.495 | miss 0.468
+[     baseline] step  9500 | tr_full  1.5110 | tr_mis  2.7083 | val_ce 1.6642 | ppl   5.28 | acc 0.5127 | ece 0.0378 | H 1.480 | miss 0.468
+[     baseline] step  9750 | tr_full  1.5241 | tr_mis  2.7211 | val_ce 1.6606 | ppl   5.26 | acc 0.5152 | ece 0.0370 | H 1.459 | miss 0.467
+[     baseline] step 10000 | tr_full  1.5351 | tr_mis  2.7042 | val_ce 1.6558 | ppl   5.24 | acc 0.5158 | ece 0.0308 | H 1.476 | miss 0.464
+
+  Reliability [baseline]  
+             bin    count     conf      acc  gap
+    [0.00,0.07]        1    0.065    0.000  -0.065
+    [0.07,0.13]     9580    0.116    0.096  -0.019
+    [0.13,0.20]    16859    0.164    0.163  -0.001
+    [0.20,0.27]    11166    0.232    0.220  -0.012
+    [0.27,0.33]    11758    0.301    0.285  -0.016
+    [0.33,0.40]    12754    0.366    0.344  -0.022
+    [0.40,0.47]    11171    0.433    0.406  -0.026
+    [0.47,0.53]    10560    0.499    0.473  -0.027
+    [0.53,0.60]     9529    0.567    0.534  -0.033
+    [0.60,0.67]     9071    0.633    0.587  -0.046
+    [0.67,0.73]     8653    0.700    0.661  -0.039
+    [0.73,0.80]     9048    0.767    0.723  -0.044
+    [0.80,0.87]     9079    0.833    0.795  -0.039
+    [0.87,0.93]    10205    0.902    0.847  -0.054
+    [0.93,1.00]    24406    0.978    0.925  -0.053
+
+======================================================================
+Phase 2: Mistake-only backprop
+======================================================================
+[ mistake-only] step     1 | tr_full  4.2295 | tr_mis  4.2451 | val_ce 3.8350 | ppl  46.29 | acc 0.1133 | ece 0.0775 | H 4.079 | miss 0.979
+[ mistake-only] step   250 | tr_full  2.6465 | tr_mis  2.9088 | val_ce 2.6255 | ppl  13.81 | acc 0.2334 | ece 0.0639 | H 2.829 | miss 0.791
+[ mistake-only] step   500 | tr_full  2.5823 | tr_mis  2.8439 | val_ce 2.5590 | ppl  12.92 | acc 0.2328 | ece 0.0635 | H 2.747 | miss 0.775
+[ mistake-only] step   750 | tr_full  2.5267 | tr_mis  2.7906 | val_ce 2.5265 | ppl  12.51 | acc 0.2458 | ece 0.0700 | H 2.657 | miss 0.768
+[ mistake-only] step  1000 | tr_full  2.5120 | tr_mis  2.7721 | val_ce 2.5069 | ppl  12.27 | acc 0.2588 | ece 0.0842 | H 2.654 | miss 0.761
+[ mistake-only] step  1250 | tr_full  2.4944 | tr_mis  2.7758 | val_ce 2.4658 | ppl  11.77 | acc 0.2683 | ece 0.0894 | H 2.651 | miss 0.752
+[ mistake-only] step  1500 | tr_full  2.4387 | tr_mis  2.7468 | val_ce 2.4206 | ppl  11.25 | acc 0.2901 | ece 0.1050 | H 2.598 | miss 0.742
+[ mistake-only] step  1750 | tr_full  2.4032 | tr_mis  2.7094 | val_ce 2.3836 | ppl  10.84 | acc 0.3017 | ece 0.1128 | H 2.575 | miss 0.730
+[ mistake-only] step  2000 | tr_full  2.3931 | tr_mis  2.7157 | val_ce 2.3497 | ppl  10.48 | acc 0.3159 | ece 0.1214 | H 2.556 | miss 0.718
+[ mistake-only] step  2250 | tr_full  2.3514 | tr_mis  2.6750 | val_ce 2.3122 | ppl  10.10 | acc 0.3199 | ece 0.1205 | H 2.535 | miss 0.706
+[ mistake-only] step  2500 | tr_full  2.3100 | tr_mis  2.6818 | val_ce 2.2791 | ppl   9.77 | acc 0.3326 | ece 0.1260 | H 2.501 | miss 0.696
+[ mistake-only] step  2750 | tr_full  2.2824 | tr_mis  2.6605 | val_ce 2.2417 | ppl   9.41 | acc 0.3468 | ece 0.1372 | H 2.482 | miss 0.685
+[ mistake-only] step  3000 | tr_full  2.2333 | tr_mis  2.6367 | val_ce 2.2114 | ppl   9.13 | acc 0.3470 | ece 0.1343 | H 2.455 | miss 0.675
+[ mistake-only] step  3250 | tr_full  2.2181 | tr_mis  2.6270 | val_ce 2.1825 | ppl   8.87 | acc 0.3635 | ece 0.1468 | H 2.446 | miss 0.664
+[ mistake-only] step  3500 | tr_full  2.1566 | tr_mis  2.5774 | val_ce 2.1407 | ppl   8.51 | acc 0.3613 | ece 0.1283 | H 2.380 | miss 0.654
+[ mistake-only] step  3750 | tr_full  2.1342 | tr_mis  2.5456 | val_ce 2.1175 | ppl   8.31 | acc 0.3822 | ece 0.1477 | H 2.361 | miss 0.645
+[ mistake-only] step  4000 | tr_full  2.1343 | tr_mis  2.5612 | val_ce 2.0978 | ppl   8.15 | acc 0.3878 | ece 0.1522 | H 2.362 | miss 0.635
+[ mistake-only] step  4250 | tr_full  2.1055 | tr_mis  2.5417 | val_ce 2.0693 | ppl   7.92 | acc 0.3949 | ece 0.1527 | H 2.337 | miss 0.626
+[ mistake-only] step  4500 | tr_full  2.0423 | tr_mis  2.5122 | val_ce 2.0489 | ppl   7.76 | acc 0.4033 | ece 0.1575 | H 2.313 | miss 0.620
+[ mistake-only] step  4750 | tr_full  2.0368 | tr_mis  2.4908 | val_ce 2.0339 | ppl   7.64 | acc 0.4104 | ece 0.1646 | H 2.317 | miss 0.611
+[ mistake-only] step  5000 | tr_full  2.0327 | tr_mis  2.5302 | val_ce 2.0093 | ppl   7.46 | acc 0.4125 | ece 0.1575 | H 2.289 | miss 0.604
+[ mistake-only] step  5250 | tr_full  2.0171 | tr_mis  2.4993 | val_ce 2.0105 | ppl   7.47 | acc 0.4077 | ece 0.1579 | H 2.294 | miss 0.599
+[ mistake-only] step  5500 | tr_full  1.9762 | tr_mis  2.4731 | val_ce 1.9926 | ppl   7.33 | acc 0.4091 | ece 0.1523 | H 2.269 | miss 0.593
+[ mistake-only] step  5750 | tr_full  1.9720 | tr_mis  2.4612 | val_ce 1.9809 | ppl   7.25 | acc 0.4158 | ece 0.1582 | H 2.267 | miss 0.589
+[ mistake-only] step  6000 | tr_full  1.9545 | tr_mis  2.4836 | val_ce 1.9645 | ppl   7.13 | acc 0.4248 | ece 0.1649 | H 2.236 | miss 0.584
+[ mistake-only] step  6250 | tr_full  1.9332 | tr_mis  2.4721 | val_ce 1.9575 | ppl   7.08 | acc 0.4321 | ece 0.1720 | H 2.239 | miss 0.579
+[ mistake-only] step  6500 | tr_full  1.9475 | tr_mis  2.4378 | val_ce 1.9506 | ppl   7.03 | acc 0.4349 | ece 0.1760 | H 2.239 | miss 0.577
+[ mistake-only] step  6750 | tr_full  1.8831 | tr_mis  2.4372 | val_ce 1.9282 | ppl   6.88 | acc 0.4382 | ece 0.1691 | H 2.210 | miss 0.571
+[ mistake-only] step  7000 | tr_full  1.9269 | tr_mis  2.4377 | val_ce 1.9199 | ppl   6.82 | acc 0.4332 | ece 0.1627 | H 2.195 | miss 0.568
+[ mistake-only] step  7250 | tr_full  1.8842 | tr_mis  2.4257 | val_ce 1.9165 | ppl   6.80 | acc 0.4365 | ece 0.1652 | H 2.194 | miss 0.567
+[ mistake-only] step  7500 | tr_full  1.8646 | tr_mis  2.3837 | val_ce 1.9069 | ppl   6.73 | acc 0.4423 | ece 0.1709 | H 2.185 | miss 0.563
+[ mistake-only] step  7750 | tr_full  1.8609 | tr_mis  2.4056 | val_ce 1.8958 | ppl   6.66 | acc 0.4457 | ece 0.1670 | H 2.157 | miss 0.560
+[ mistake-only] step  8000 | tr_full  1.8902 | tr_mis  2.4261 | val_ce 1.8876 | ppl   6.60 | acc 0.4526 | ece 0.1775 | H 2.170 | miss 0.557
+[ mistake-only] step  8250 | tr_full  1.8650 | tr_mis  2.4117 | val_ce 1.8863 | ppl   6.60 | acc 0.4502 | ece 0.1756 | H 2.168 | miss 0.556
+[ mistake-only] step  8500 | tr_full  1.8337 | tr_mis  2.3865 | val_ce 1.8709 | ppl   6.49 | acc 0.4499 | ece 0.1701 | H 2.143 | miss 0.553
+[ mistake-only] step  8750 | tr_full  1.8455 | tr_mis  2.3932 | val_ce 1.8636 | ppl   6.45 | acc 0.4628 | ece 0.1816 | H 2.145 | miss 0.549
+[ mistake-only] step  9000 | tr_full  1.8268 | tr_mis  2.4020 | val_ce 1.8647 | ppl   6.45 | acc 0.4560 | ece 0.1736 | H 2.141 | miss 0.548
+[ mistake-only] step  9250 | tr_full  1.8267 | tr_mis  2.3879 | val_ce 1.8551 | ppl   6.39 | acc 0.4596 | ece 0.1752 | H 2.128 | miss 0.545
+[ mistake-only] step  9500 | tr_full  1.7991 | tr_mis  2.3572 | val_ce 1.8547 | ppl   6.39 | acc 0.4603 | ece 0.1791 | H 2.137 | miss 0.544
+[ mistake-only] step  9750 | tr_full  1.8073 | tr_mis  2.3962 | val_ce 1.8335 | ppl   6.26 | acc 0.4700 | ece 0.1788 | H 2.101 | miss 0.542
+[ mistake-only] step 10000 | tr_full  1.8312 | tr_mis  2.3705 | val_ce 1.8429 | ppl   6.32 | acc 0.4632 | ece 0.1785 | H 2.118 | miss 0.539
+
+  Reliability [mistake-only]
+             bin    count     conf      acc  gap
+    [0.00,0.07]       48    0.061    0.083  +0.023
+    [0.07,0.13]    28923    0.098    0.120  +0.022
+    [0.13,0.20]    19838    0.172    0.306  +0.134
+    [0.20,0.27]    36893    0.235    0.404  +0.169
+    [0.27,0.33]    28169    0.298    0.521  +0.223
+    [0.33,0.40]    16661    0.364    0.645  +0.281
+    [0.40,0.47]    10763    0.431    0.708  +0.276
+    [0.47,0.53]    11268    0.499    0.732  +0.234
+    [0.53,0.60]     5733    0.563    0.887  +0.324
+    [0.60,0.67]     2928    0.629    0.919  +0.290
+    [0.67,0.73]     1463    0.697    0.907  +0.210
+    [0.73,0.80]      747    0.761    0.886  +0.125
+    [0.80,0.87]      271    0.828    0.926  +0.098
+    [0.87,0.93]      118    0.893    0.992  +0.099
+    [0.93,1.00]       17    0.945    1.000  +0.055
+
+======================================================================
+FINAL COMPARISON
+======================================================================
+Metric                     Baseline   Mistake-only        Delta
+--------------------------------------------------------------
+val_ce (loss)                1.6558         1.8429      +0.1872
+perplexity                   5.2371         6.3151      +1.0780
+top-1 accuracy               0.5158         0.4632      -0.0526
+Brier score                  0.6104         0.7256      +0.1152
+entropy (nats)               1.4759         2.1178      +0.6419
+ECE                          0.0308         0.1785      +0.1477
+confidence|correct           0.7031         0.3555      -0.3476
+confidence|wrong             0.3799         0.2235      -0.1565
+
+Uniform-entropy reference for vocab=65: 4.174 nats

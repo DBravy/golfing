@@ -6,6 +6,7 @@ and therefore the same total parameter count. The only difference is
 whether the inner-loop TTT mechanism is active:
     --mode standard   : n_ttt_blocks=0, plain transformer
     --mode ttt        : n_ttt_blocks>0 with TTT inner loop
+    --mode persistent : 
     --mode both       : run both back-to-back and plot the comparison
 
 Example:
@@ -13,6 +14,8 @@ Example:
     python train.py --max_steps 200         # shorter run
     python train.py --inner_lr 3.0          # sweep inner-loop lr
     python train.py --mode ttt --seq_len 512 --window_size 128
+    python train.py --mode persistent --seq_len 256 --mini_batch_size 128
+
 """
 
 import os

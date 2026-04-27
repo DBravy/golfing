@@ -36,8 +36,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import baseline
-from baseline import (
+import baselines.baseline as baseline
+from baselines.baseline import (
     Config,
     TinyGPT,
     VOCAB_SIZE,

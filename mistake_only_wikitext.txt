@@ -1,0 +1,623 @@
+Device: cuda
+Vocab: 33277 | train tokens: 2,051,910 | val tokens: 213,886
+
+Model config: {'vocab_size': 33277, 'block_size': 128, 'n_layer': 6, 'n_head': 4, 'n_embd': 256, 'dropout': 0.1}
+Train config: {'n_steps': 50000, 'batch_size': 64, 'lr': 0.0003, 'weight_decay': 0.01, 'grad_clip': 1.0, 'eval_every': 250, 'eval_batches': 20}
+Noise config: {'n_steps': 500, 'noise_std': 1.0, 'log_every': 100}
+
+/home/dbrayjr5/miniconda3/envs/noise/lib/python3.10/site-packages/torch/cuda/__init__.py:1061: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+======================================================================
+Phase 0: Gaussian embedding-noise pretraining (std=1.0)
+======================================================================
+  [noise-pretrain] step     1/500 | loss 66.3001 (chance=10.413) | std=1.00 | 0.7s
+  [noise-pretrain] step   100/500 | loss 32.9704 (chance=10.413) | std=1.00 | 23.3s
+  [noise-pretrain] step   200/500 | loss 24.2870 (chance=10.413) | std=1.00 | 47.7s
+  [noise-pretrain] step   300/500 | loss 18.3145 (chance=10.413) | std=1.00 | 73.6s
+  [noise-pretrain] step   400/500 | loss 14.7699 (chance=10.413) | std=1.00 | 100.3s
+  [noise-pretrain] step   500/500 | loss 12.8712 (chance=10.413) | std=1.00 | 125.8s
+  done.
+
+======================================================================
+Phase 1: Baseline (standard cross-entropy)
+======================================================================
+[     baseline] step     1 | tr_full 13.0219 | tr_mis 13.0287 | val_ce 12.3551 | ppl 232136.37 | acc 0.0449 | ece 0.0440 | H 9.942 | miss 0.999
+[     baseline] step   250 | tr_full  7.4829 | tr_mis  8.1069 | val_ce 6.9459 | ppl 1038.86 | acc 0.1211 | ece 0.0140 | H 6.701 | miss 0.896
+[     baseline] step   500 | tr_full  6.9408 | tr_mis  7.6250 | val_ce 6.6433 | ppl 767.66 | acc 0.1363 | ece 0.0158 | H 6.519 | miss 0.880
+[     baseline] step   750 | tr_full  6.7779 | tr_mis  7.5453 | val_ce 6.5051 | ppl 668.56 | acc 0.1534 | ece 0.0114 | H 6.374 | miss 0.866
+[     baseline] step  1000 | tr_full  6.6813 | tr_mis  7.5120 | val_ce 6.4239 | ppl 616.41 | acc 0.1638 | ece 0.0135 | H 6.286 | miss 0.856
+[     baseline] step  1250 | tr_full  6.6195 | tr_mis  7.5068 | val_ce 6.3706 | ppl 584.42 | acc 0.1699 | ece 0.0120 | H 6.115 | miss 0.848
+[     baseline] step  1500 | tr_full  6.5556 | tr_mis  7.4939 | val_ce 6.3075 | ppl 548.69 | acc 0.1776 | ece 0.0107 | H 6.072 | miss 0.840
+[     baseline] step  1750 | tr_full  6.4945 | tr_mis  7.4623 | val_ce 6.2669 | ppl 526.83 | acc 0.1809 | ece 0.0181 | H 5.969 | miss 0.835
+[     baseline] step  2000 | tr_full  6.4477 | tr_mis  7.4483 | val_ce 6.2136 | ppl 499.52 | acc 0.1868 | ece 0.0135 | H 5.974 | miss 0.831
+[     baseline] step  2250 | tr_full  6.3985 | tr_mis  7.4335 | val_ce 6.1767 | ppl 481.41 | acc 0.1896 | ece 0.0135 | H 6.111 | miss 0.826
+[     baseline] step  2500 | tr_full  6.3645 | tr_mis  7.4159 | val_ce 6.1464 | ppl 467.03 | acc 0.1923 | ece 0.0141 | H 5.927 | miss 0.823
+[     baseline] step  2750 | tr_full  6.3148 | tr_mis  7.3857 | val_ce 6.1077 | ppl 449.31 | acc 0.1963 | ece 0.0138 | H 5.941 | miss 0.819
+[     baseline] step  3000 | tr_full  6.2746 | tr_mis  7.3678 | val_ce 6.0756 | ppl 435.10 | acc 0.1982 | ece 0.0178 | H 5.867 | miss 0.816
+[     baseline] step  3250 | tr_full  6.2285 | tr_mis  7.3456 | val_ce 6.0493 | ppl 423.83 | acc 0.2000 | ece 0.0196 | H 5.812 | miss 0.812
+[     baseline] step  3500 | tr_full  6.1952 | tr_mis  7.3284 | val_ce 5.9984 | ppl 402.78 | acc 0.2038 | ece 0.0124 | H 5.827 | miss 0.809
+[     baseline] step  3750 | tr_full  6.1539 | tr_mis  7.2972 | val_ce 5.9738 | ppl 393.00 | acc 0.2056 | ece 0.0142 | H 5.792 | miss 0.807
+[     baseline] step  4000 | tr_full  6.1182 | tr_mis  7.2805 | val_ce 5.9444 | ppl 381.62 | acc 0.2072 | ece 0.0188 | H 5.768 | miss 0.804
+[     baseline] step  4250 | tr_full  6.0755 | tr_mis  7.2475 | val_ce 5.9137 | ppl 370.08 | acc 0.2093 | ece 0.0129 | H 5.653 | miss 0.801
+[     baseline] step  4500 | tr_full  6.0371 | tr_mis  7.2342 | val_ce 5.8903 | ppl 361.51 | acc 0.2105 | ece 0.0286 | H 5.561 | miss 0.798
+[     baseline] step  4750 | tr_full  5.9959 | tr_mis  7.1996 | val_ce 5.8490 | ppl 346.87 | acc 0.2126 | ece 0.0217 | H 5.588 | miss 0.796
+[     baseline] step  5000 | tr_full  5.9559 | tr_mis  7.1763 | val_ce 5.8241 | ppl 338.35 | acc 0.2125 | ece 0.0174 | H 5.619 | miss 0.793
+[     baseline] step  5250 | tr_full  5.9103 | tr_mis  7.1284 | val_ce 5.7881 | ppl 326.41 | acc 0.2147 | ece 0.0175 | H 5.557 | miss 0.792
+[     baseline] step  5500 | tr_full  5.8699 | tr_mis  7.0962 | val_ce 5.7544 | ppl 315.58 | acc 0.2172 | ece 0.0146 | H 5.486 | miss 0.789
+[     baseline] step  5750 | tr_full  5.8338 | tr_mis  7.0747 | val_ce 5.7354 | ppl 309.63 | acc 0.2182 | ece 0.0179 | H 5.590 | miss 0.787
+[     baseline] step  6000 | tr_full  5.8038 | tr_mis  7.0343 | val_ce 5.7126 | ppl 302.65 | acc 0.2188 | ece 0.0262 | H 5.358 | miss 0.787
+[     baseline] step  6250 | tr_full  5.7510 | tr_mis  6.9971 | val_ce 5.6744 | ppl 291.33 | acc 0.2215 | ece 0.0228 | H 5.407 | miss 0.783
+[     baseline] step  6500 | tr_full  5.7277 | tr_mis  6.9801 | val_ce 5.6528 | ppl 285.08 | acc 0.2216 | ece 0.0283 | H 5.302 | miss 0.782
+[     baseline] step  6750 | tr_full  5.6747 | tr_mis  6.9410 | val_ce 5.6207 | ppl 276.09 | acc 0.2237 | ece 0.0191 | H 5.345 | miss 0.779
+[     baseline] step  7000 | tr_full  5.6423 | tr_mis  6.9052 | val_ce 5.5981 | ppl 269.91 | acc 0.2241 | ece 0.0225 | H 5.321 | miss 0.778
+[     baseline] step  7250 | tr_full  5.6020 | tr_mis  6.8760 | val_ce 5.5533 | ppl 258.10 | acc 0.2275 | ece 0.0268 | H 5.237 | miss 0.775
+[     baseline] step  7500 | tr_full  5.5606 | tr_mis  6.8373 | val_ce 5.5377 | ppl 254.10 | acc 0.2273 | ece 0.0272 | H 5.222 | miss 0.774
+[     baseline] step  7750 | tr_full  5.5265 | tr_mis  6.8048 | val_ce 5.5135 | ppl 248.01 | acc 0.2282 | ece 0.0208 | H 5.321 | miss 0.772
+[     baseline] step  8000 | tr_full  5.4829 | tr_mis  6.7664 | val_ce 5.4893 | ppl 242.08 | acc 0.2302 | ece 0.0243 | H 5.187 | miss 0.770
+[     baseline] step  8250 | tr_full  5.4540 | tr_mis  6.7353 | val_ce 5.4646 | ppl 236.18 | acc 0.2302 | ece 0.0285 | H 5.167 | miss 0.769
+[     baseline] step  8500 | tr_full  5.4089 | tr_mis  6.7002 | val_ce 5.4363 | ppl 229.58 | acc 0.2320 | ece 0.0271 | H 5.184 | miss 0.767
+[     baseline] step  8750 | tr_full  5.3719 | tr_mis  6.6620 | val_ce 5.4209 | ppl 226.09 | acc 0.2311 | ece 0.0260 | H 5.172 | miss 0.766
+[     baseline] step  9000 | tr_full  5.3391 | tr_mis  6.6308 | val_ce 5.4025 | ppl 221.96 | acc 0.2328 | ece 0.0254 | H 5.205 | miss 0.764
+[     baseline] step  9250 | tr_full  5.3166 | tr_mis  6.6082 | val_ce 5.3684 | ppl 214.53 | acc 0.2338 | ece 0.0256 | H 5.170 | miss 0.763
+[     baseline] step  9500 | tr_full  5.2893 | tr_mis  6.5800 | val_ce 5.3429 | ppl 209.12 | acc 0.2346 | ece 0.0187 | H 5.158 | miss 0.763
+[     baseline] step  9750 | tr_full  5.2529 | tr_mis  6.5517 | val_ce 5.3346 | ppl 207.40 | acc 0.2349 | ece 0.0301 | H 5.055 | miss 0.760
+[     baseline] step 10000 | tr_full  5.2272 | tr_mis  6.5216 | val_ce 5.3224 | ppl 204.88 | acc 0.2344 | ece 0.0266 | H 5.005 | miss 0.760
+[     baseline] step 10250 | tr_full  5.1756 | tr_mis  6.4872 | val_ce 5.3004 | ppl 200.41 | acc 0.2371 | ece 0.0288 | H 5.034 | miss 0.756
+[     baseline] step 10500 | tr_full  5.1474 | tr_mis  6.4548 | val_ce 5.2823 | ppl 196.82 | acc 0.2362 | ece 0.0250 | H 5.082 | miss 0.755
+[     baseline] step 10750 | tr_full  5.1282 | tr_mis  6.4342 | val_ce 5.2654 | ppl 193.53 | acc 0.2385 | ece 0.0291 | H 4.966 | miss 0.755
+[     baseline] step 11000 | tr_full  5.1035 | tr_mis  6.4133 | val_ce 5.2484 | ppl 190.26 | acc 0.2377 | ece 0.0318 | H 4.943 | miss 0.753
+[     baseline] step 11250 | tr_full  5.0741 | tr_mis  6.3849 | val_ce 5.2406 | ppl 188.79 | acc 0.2391 | ece 0.0323 | H 4.871 | miss 0.752
+[     baseline] step 11500 | tr_full  5.0661 | tr_mis  6.3805 | val_ce 5.2364 | ppl 188.00 | acc 0.2377 | ece 0.0348 | H 4.866 | miss 0.751
+[     baseline] step 11750 | tr_full  5.0279 | tr_mis  6.3392 | val_ce 5.2035 | ppl 181.91 | acc 0.2403 | ece 0.0309 | H 4.903 | miss 0.750
+[     baseline] step 12000 | tr_full  5.0028 | tr_mis  6.3222 | val_ce 5.2029 | ppl 181.80 | acc 0.2404 | ece 0.0295 | H 4.890 | miss 0.748
+[     baseline] step 12250 | tr_full  4.9695 | tr_mis  6.2945 | val_ce 5.1858 | ppl 178.72 | acc 0.2407 | ece 0.0330 | H 4.796 | miss 0.746
+[     baseline] step 12500 | tr_full  4.9494 | tr_mis  6.2803 | val_ce 5.1760 | ppl 176.98 | acc 0.2412 | ece 0.0259 | H 4.911 | miss 0.745
+[     baseline] step 12750 | tr_full  4.9249 | tr_mis  6.2554 | val_ce 5.1598 | ppl 174.12 | acc 0.2429 | ece 0.0257 | H 4.905 | miss 0.744
+[     baseline] step 13000 | tr_full  4.9163 | tr_mis  6.2447 | val_ce 5.1495 | ppl 172.35 | acc 0.2430 | ece 0.0242 | H 4.918 | miss 0.744
+[     baseline] step 13250 | tr_full  4.9029 | tr_mis  6.2337 | val_ce 5.1565 | ppl 173.55 | acc 0.2423 | ece 0.0289 | H 4.789 | miss 0.743
+[     baseline] step 13500 | tr_full  4.8808 | tr_mis  6.2155 | val_ce 5.1419 | ppl 171.03 | acc 0.2431 | ece 0.0398 | H 4.696 | miss 0.741
+[     baseline] step 13750 | tr_full  4.8489 | tr_mis  6.1776 | val_ce 5.1382 | ppl 170.41 | acc 0.2430 | ece 0.0327 | H 4.761 | miss 0.741
+[     baseline] step 14000 | tr_full  4.8196 | tr_mis  6.1608 | val_ce 5.1363 | ppl 170.08 | acc 0.2441 | ece 0.0346 | H 4.748 | miss 0.738
+[     baseline] step 14250 | tr_full  4.8253 | tr_mis  6.1667 | val_ce 5.1171 | ppl 166.86 | acc 0.2449 | ece 0.0321 | H 4.716 | miss 0.738
+[     baseline] step 14500 | tr_full  4.7987 | tr_mis  6.1410 | val_ce 5.1317 | ppl 169.30 | acc 0.2432 | ece 0.0354 | H 4.750 | miss 0.737
+[     baseline] step 14750 | tr_full  4.7653 | tr_mis  6.1103 | val_ce 5.1163 | ppl 166.71 | acc 0.2444 | ece 0.0366 | H 4.665 | miss 0.736
+[     baseline] step 15000 | tr_full  4.7577 | tr_mis  6.1021 | val_ce 5.1156 | ppl 166.60 | acc 0.2435 | ece 0.0356 | H 4.712 | miss 0.735
+[     baseline] step 15250 | tr_full  4.7477 | tr_mis  6.0937 | val_ce 5.0982 | ppl 163.73 | acc 0.2457 | ece 0.0447 | H 4.556 | miss 0.734
+[     baseline] step 15500 | tr_full  4.7259 | tr_mis  6.0780 | val_ce 5.0849 | ppl 161.56 | acc 0.2458 | ece 0.0384 | H 4.664 | miss 0.733
+[     baseline] step 15750 | tr_full  4.7129 | tr_mis  6.0623 | val_ce 5.0852 | ppl 161.62 | acc 0.2456 | ece 0.0431 | H 4.624 | miss 0.732
+[     baseline] step 16000 | tr_full  4.6863 | tr_mis  6.0418 | val_ce 5.0879 | ppl 162.06 | acc 0.2469 | ece 0.0501 | H 4.507 | miss 0.731
+[     baseline] step 16250 | tr_full  4.6784 | tr_mis  6.0360 | val_ce 5.0956 | ppl 163.30 | acc 0.2460 | ece 0.0414 | H 4.586 | miss 0.730
+[     baseline] step 16500 | tr_full  4.6843 | tr_mis  6.0396 | val_ce 5.0772 | ppl 160.32 | acc 0.2474 | ece 0.0392 | H 4.614 | miss 0.730
+[     baseline] step 16750 | tr_full  4.6549 | tr_mis  6.0106 | val_ce 5.0732 | ppl 159.68 | acc 0.2457 | ece 0.0289 | H 4.706 | miss 0.729
+[     baseline] step 17000 | tr_full  4.6234 | tr_mis  5.9866 | val_ce 5.0867 | ppl 161.86 | acc 0.2466 | ece 0.0405 | H 4.587 | miss 0.727
+[     baseline] step 17250 | tr_full  4.6271 | tr_mis  5.9841 | val_ce 5.0653 | ppl 158.43 | acc 0.2479 | ece 0.0377 | H 4.586 | miss 0.728
+[     baseline] step 17500 | tr_full  4.6084 | tr_mis  5.9773 | val_ce 5.0819 | ppl 161.09 | acc 0.2482 | ece 0.0478 | H 4.493 | miss 0.725
+[     baseline] step 17750 | tr_full  4.6092 | tr_mis  5.9715 | val_ce 5.0550 | ppl 156.80 | acc 0.2479 | ece 0.0371 | H 4.573 | miss 0.726
+[     baseline] step 18000 | tr_full  4.6004 | tr_mis  5.9580 | val_ce 5.0550 | ppl 156.80 | acc 0.2473 | ece 0.0377 | H 4.619 | miss 0.727
+[     baseline] step 18250 | tr_full  4.5666 | tr_mis  5.9360 | val_ce 5.0447 | ppl 155.20 | acc 0.2494 | ece 0.0365 | H 4.556 | miss 0.723
+[     baseline] step 18500 | tr_full  4.5687 | tr_mis  5.9344 | val_ce 5.0541 | ppl 156.66 | acc 0.2481 | ece 0.0460 | H 4.493 | miss 0.724
+[     baseline] step 18750 | tr_full  4.5335 | tr_mis  5.9045 | val_ce 5.0620 | ppl 157.90 | acc 0.2482 | ece 0.0434 | H 4.480 | miss 0.722
+[     baseline] step 19000 | tr_full  4.5266 | tr_mis  5.9009 | val_ce 5.0606 | ppl 157.68 | acc 0.2474 | ece 0.0384 | H 4.590 | miss 0.721
+[     baseline] step 19250 | tr_full  4.5308 | tr_mis  5.9069 | val_ce 5.0585 | ppl 157.35 | acc 0.2490 | ece 0.0426 | H 4.503 | miss 0.721
+[     baseline] step 19500 | tr_full  4.5141 | tr_mis  5.8885 | val_ce 5.0663 | ppl 158.58 | acc 0.2476 | ece 0.0494 | H 4.460 | miss 0.721
+[     baseline] step 19750 | tr_full  4.4987 | tr_mis  5.8831 | val_ce 5.0335 | ppl 153.47 | acc 0.2493 | ece 0.0373 | H 4.552 | miss 0.718
+[     baseline] step 20000 | tr_full  4.4871 | tr_mis  5.8656 | val_ce 5.0423 | ppl 154.82 | acc 0.2489 | ece 0.0396 | H 4.536 | miss 0.719
+[     baseline] step 20250 | tr_full  4.4782 | tr_mis  5.8527 | val_ce 5.0565 | ppl 157.04 | acc 0.2481 | ece 0.0415 | H 4.504 | miss 0.719
+[     baseline] step 20500 | tr_full  4.4586 | tr_mis  5.8435 | val_ce 5.0455 | ppl 155.32 | acc 0.2478 | ece 0.0372 | H 4.596 | miss 0.717
+[     baseline] step 20750 | tr_full  4.4517 | tr_mis  5.8296 | val_ce 5.0480 | ppl 155.71 | acc 0.2479 | ece 0.0441 | H 4.509 | miss 0.717
+[     baseline] step 21000 | tr_full  4.4413 | tr_mis  5.8268 | val_ce 5.0444 | ppl 155.16 | acc 0.2498 | ece 0.0465 | H 4.456 | miss 0.716
+[     baseline] step 21250 | tr_full  4.4227 | tr_mis  5.8132 | val_ce 5.0429 | ppl 154.92 | acc 0.2503 | ece 0.0468 | H 4.372 | miss 0.714
+[     baseline] step 21500 | tr_full  4.4207 | tr_mis  5.8076 | val_ce 5.0236 | ppl 151.95 | acc 0.2508 | ece 0.0472 | H 4.423 | miss 0.714
+[     baseline] step 21750 | tr_full  4.4201 | tr_mis  5.8055 | val_ce 5.0412 | ppl 154.66 | acc 0.2491 | ece 0.0438 | H 4.463 | miss 0.714
+[     baseline] step 22000 | tr_full  4.4111 | tr_mis  5.7969 | val_ce 5.0539 | ppl 156.63 | acc 0.2492 | ece 0.0475 | H 4.438 | miss 0.714
+[     baseline] step 22250 | tr_full  4.4087 | tr_mis  5.7970 | val_ce 5.0387 | ppl 154.27 | acc 0.2508 | ece 0.0471 | H 4.425 | miss 0.713
+[     baseline] step 22500 | tr_full  4.3966 | tr_mis  5.7768 | val_ce 5.0347 | ppl 153.65 | acc 0.2489 | ece 0.0489 | H 4.355 | miss 0.714
+[     baseline] step 22750 | tr_full  4.3674 | tr_mis  5.7669 | val_ce 5.0405 | ppl 154.54 | acc 0.2489 | ece 0.0536 | H 4.390 | miss 0.710
+[     baseline] step 23000 | tr_full  4.3684 | tr_mis  5.7616 | val_ce 5.0431 | ppl 154.95 | acc 0.2498 | ece 0.0496 | H 4.398 | miss 0.711
+[     baseline] step 23250 | tr_full  4.3659 | tr_mis  5.7470 | val_ce 5.0380 | ppl 154.16 | acc 0.2497 | ece 0.0514 | H 4.378 | miss 0.712
+[     baseline] step 23500 | tr_full  4.3484 | tr_mis  5.7440 | val_ce 5.0467 | ppl 155.51 | acc 0.2500 | ece 0.0486 | H 4.376 | miss 0.710
+[     baseline] step 23750 | tr_full  4.3347 | tr_mis  5.7269 | val_ce 5.0433 | ppl 154.98 | acc 0.2499 | ece 0.0568 | H 4.321 | miss 0.709
+[     baseline] step 24000 | tr_full  4.3160 | tr_mis  5.7158 | val_ce 5.0509 | ppl 156.17 | acc 0.2499 | ece 0.0544 | H 4.297 | miss 0.708
+[     baseline] step 24250 | tr_full  4.3176 | tr_mis  5.7165 | val_ce 5.0329 | ppl 153.38 | acc 0.2511 | ece 0.0470 | H 4.411 | miss 0.708
+[     baseline] step 24500 | tr_full  4.3053 | tr_mis  5.7021 | val_ce 5.0475 | ppl 155.63 | acc 0.2497 | ece 0.0574 | H 4.277 | miss 0.707
+[     baseline] step 24750 | tr_full  4.3022 | tr_mis  5.6980 | val_ce 5.0527 | ppl 156.45 | acc 0.2501 | ece 0.0583 | H 4.265 | miss 0.707
+[     baseline] step 25000 | tr_full  4.2911 | tr_mis  5.6959 | val_ce 5.0372 | ppl 154.05 | acc 0.2502 | ece 0.0537 | H 4.321 | miss 0.706
+[     baseline] step 25250 | tr_full  4.2846 | tr_mis  5.6836 | val_ce 5.0330 | ppl 153.39 | acc 0.2509 | ece 0.0531 | H 4.341 | miss 0.706
+[     baseline] step 25500 | tr_full  4.2776 | tr_mis  5.6781 | val_ce 5.0511 | ppl 156.20 | acc 0.2506 | ece 0.0494 | H 4.353 | miss 0.705
+[     baseline] step 25750 | tr_full  4.2644 | tr_mis  5.6666 | val_ce 5.0268 | ppl 152.45 | acc 0.2507 | ece 0.0534 | H 4.311 | miss 0.705
+[     baseline] step 26000 | tr_full  4.2588 | tr_mis  5.6572 | val_ce 5.0235 | ppl 151.94 | acc 0.2499 | ece 0.0469 | H 4.355 | miss 0.705
+[     baseline] step 26250 | tr_full  4.2524 | tr_mis  5.6505 | val_ce 5.0442 | ppl 155.12 | acc 0.2508 | ece 0.0520 | H 4.288 | miss 0.704
+[     baseline] step 26500 | tr_full  4.2476 | tr_mis  5.6516 | val_ce 5.0392 | ppl 154.35 | acc 0.2510 | ece 0.0491 | H 4.349 | miss 0.703
+[     baseline] step 26750 | tr_full  4.2420 | tr_mis  5.6469 | val_ce 5.0327 | ppl 153.34 | acc 0.2519 | ece 0.0559 | H 4.272 | miss 0.703
+[     baseline] step 27000 | tr_full  4.2196 | tr_mis  5.6225 | val_ce 5.0507 | ppl 156.13 | acc 0.2495 | ece 0.0523 | H 4.311 | miss 0.702
+[     baseline] step 27250 | tr_full  4.1991 | tr_mis  5.6071 | val_ce 5.0315 | ppl 153.16 | acc 0.2506 | ece 0.0467 | H 4.388 | miss 0.700
+[     baseline] step 27500 | tr_full  4.2031 | tr_mis  5.6111 | val_ce 5.0290 | ppl 152.78 | acc 0.2517 | ece 0.0621 | H 4.229 | miss 0.700
+[     baseline] step 27750 | tr_full  4.1908 | tr_mis  5.6038 | val_ce 5.0442 | ppl 155.11 | acc 0.2500 | ece 0.0515 | H 4.293 | miss 0.699
+[     baseline] step 28000 | tr_full  4.1824 | tr_mis  5.5938 | val_ce 5.0218 | ppl 151.69 | acc 0.2523 | ece 0.0576 | H 4.224 | miss 0.699
+[     baseline] step 28250 | tr_full  4.1763 | tr_mis  5.5878 | val_ce 5.0120 | ppl 150.21 | acc 0.2531 | ece 0.0607 | H 4.212 | miss 0.699
+[     baseline] step 28500 | tr_full  4.1799 | tr_mis  5.5934 | val_ce 5.0397 | ppl 154.42 | acc 0.2507 | ece 0.0590 | H 4.203 | miss 0.698
+[     baseline] step 28750 | tr_full  4.1529 | tr_mis  5.5684 | val_ce 5.0302 | ppl 152.97 | acc 0.2505 | ece 0.0552 | H 4.275 | miss 0.697
+[     baseline] step 29000 | tr_full  4.1751 | tr_mis  5.5869 | val_ce 5.0325 | ppl 153.32 | acc 0.2513 | ece 0.0567 | H 4.196 | miss 0.698
+[     baseline] step 29250 | tr_full  4.1450 | tr_mis  5.5609 | val_ce 5.0362 | ppl 153.88 | acc 0.2518 | ece 0.0627 | H 4.162 | miss 0.697
+[     baseline] step 29500 | tr_full  4.1301 | tr_mis  5.5542 | val_ce 5.0290 | ppl 152.79 | acc 0.2521 | ece 0.0596 | H 4.188 | miss 0.695
+[     baseline] step 29750 | tr_full  4.1529 | tr_mis  5.5645 | val_ce 5.0223 | ppl 151.76 | acc 0.2522 | ece 0.0598 | H 4.183 | miss 0.698
+[     baseline] step 30000 | tr_full  4.1394 | tr_mis  5.5533 | val_ce 5.0227 | ppl 151.83 | acc 0.2516 | ece 0.0555 | H 4.254 | miss 0.696
+[     baseline] step 30250 | tr_full  4.1126 | tr_mis  5.5312 | val_ce 5.0346 | ppl 153.64 | acc 0.2528 | ece 0.0701 | H 4.123 | miss 0.694
+[     baseline] step 30500 | tr_full  4.1179 | tr_mis  5.5280 | val_ce 5.0399 | ppl 154.45 | acc 0.2511 | ece 0.0615 | H 4.195 | miss 0.696
+[     baseline] step 30750 | tr_full  4.1053 | tr_mis  5.5207 | val_ce 5.0474 | ppl 155.62 | acc 0.2507 | ece 0.0639 | H 4.138 | miss 0.694
+[     baseline] step 31000 | tr_full  4.0866 | tr_mis  5.5118 | val_ce 5.0494 | ppl 155.92 | acc 0.2504 | ece 0.0593 | H 4.234 | miss 0.692
+[     baseline] step 31250 | tr_full  4.0702 | tr_mis  5.4930 | val_ce 5.0414 | ppl 154.68 | acc 0.2518 | ece 0.0649 | H 4.131 | miss 0.692
+[     baseline] step 31500 | tr_full  4.0765 | tr_mis  5.5004 | val_ce 5.0299 | ppl 152.91 | acc 0.2521 | ece 0.0569 | H 4.202 | miss 0.692
+[     baseline] step 31750 | tr_full  4.0682 | tr_mis  5.4857 | val_ce 5.0482 | ppl 155.75 | acc 0.2507 | ece 0.0595 | H 4.178 | miss 0.692
+[     baseline] step 32000 | tr_full  4.0913 | tr_mis  5.4982 | val_ce 5.0396 | ppl 154.41 | acc 0.2516 | ece 0.0620 | H 4.145 | miss 0.695
+[     baseline] step 32250 | tr_full  4.0565 | tr_mis  5.4820 | val_ce 5.0565 | ppl 157.04 | acc 0.2499 | ece 0.0582 | H 4.191 | miss 0.690
+[     baseline] step 32500 | tr_full  4.0634 | tr_mis  5.4851 | val_ce 5.0475 | ppl 155.64 | acc 0.2505 | ece 0.0671 | H 4.071 | miss 0.691
+[     baseline] step 32750 | tr_full  4.0234 | tr_mis  5.4581 | val_ce 5.0463 | ppl 155.44 | acc 0.2499 | ece 0.0633 | H 4.138 | miss 0.687
+[     baseline] step 33000 | tr_full  4.0262 | tr_mis  5.4504 | val_ce 5.0390 | ppl 154.32 | acc 0.2519 | ece 0.0679 | H 4.110 | miss 0.689
+[     baseline] step 33250 | tr_full  4.0199 | tr_mis  5.4429 | val_ce 5.0249 | ppl 152.15 | acc 0.2530 | ece 0.0645 | H 4.120 | miss 0.689
+[     baseline] step 33500 | tr_full  4.0230 | tr_mis  5.4484 | val_ce 5.0493 | ppl 155.92 | acc 0.2499 | ece 0.0621 | H 4.148 | miss 0.688
+[     baseline] step 33750 | tr_full  4.0232 | tr_mis  5.4424 | val_ce 5.0525 | ppl 156.41 | acc 0.2508 | ece 0.0638 | H 4.171 | miss 0.689
+[     baseline] step 34000 | tr_full  3.9940 | tr_mis  5.4294 | val_ce 5.0470 | ppl 155.56 | acc 0.2523 | ece 0.0658 | H 4.107 | miss 0.686
+[     baseline] step 34250 | tr_full  4.0077 | tr_mis  5.4387 | val_ce 5.0499 | ppl 156.01 | acc 0.2520 | ece 0.0694 | H 4.061 | miss 0.687
+[     baseline] step 34500 | tr_full  3.9922 | tr_mis  5.4200 | val_ce 5.0531 | ppl 156.51 | acc 0.2517 | ece 0.0687 | H 4.069 | miss 0.687
+[     baseline] step 34750 | tr_full  3.9929 | tr_mis  5.4200 | val_ce 5.0432 | ppl 154.96 | acc 0.2503 | ece 0.0630 | H 4.131 | miss 0.686
+[     baseline] step 35000 | tr_full  3.9929 | tr_mis  5.4206 | val_ce 5.0560 | ppl 156.96 | acc 0.2528 | ece 0.0700 | H 4.067 | miss 0.686
+[     baseline] step 35250 | tr_full  3.9731 | tr_mis  5.4024 | val_ce 5.0545 | ppl 156.73 | acc 0.2515 | ece 0.0709 | H 4.069 | miss 0.685
+[     baseline] step 35500 | tr_full  3.9723 | tr_mis  5.4024 | val_ce 5.0721 | ppl 159.51 | acc 0.2499 | ece 0.0698 | H 4.090 | miss 0.685
+[     baseline] step 35750 | tr_full  3.9624 | tr_mis  5.3924 | val_ce 5.0554 | ppl 156.87 | acc 0.2502 | ece 0.0658 | H 4.135 | miss 0.684
+[     baseline] step 36000 | tr_full  3.9660 | tr_mis  5.3963 | val_ce 5.0600 | ppl 157.59 | acc 0.2506 | ece 0.0695 | H 4.070 | miss 0.685
+[     baseline] step 36250 | tr_full  3.9586 | tr_mis  5.3892 | val_ce 5.0710 | ppl 159.34 | acc 0.2489 | ece 0.0640 | H 4.161 | miss 0.684
+[     baseline] step 36500 | tr_full  3.9455 | tr_mis  5.3857 | val_ce 5.0566 | ppl 157.06 | acc 0.2500 | ece 0.0638 | H 4.119 | miss 0.682
+[     baseline] step 36750 | tr_full  3.9413 | tr_mis  5.3757 | val_ce 5.0631 | ppl 158.08 | acc 0.2505 | ece 0.0721 | H 4.056 | miss 0.682
+[     baseline] step 37000 | tr_full  3.9439 | tr_mis  5.3782 | val_ce 5.0585 | ppl 157.35 | acc 0.2508 | ece 0.0666 | H 4.090 | miss 0.683
+[     baseline] step 37250 | tr_full  3.9326 | tr_mis  5.3652 | val_ce 5.0562 | ppl 157.00 | acc 0.2518 | ece 0.0666 | H 4.095 | miss 0.682
+[     baseline] step 37500 | tr_full  3.9271 | tr_mis  5.3571 | val_ce 5.0727 | ppl 159.61 | acc 0.2515 | ece 0.0759 | H 3.981 | miss 0.682
+[     baseline] step 37750 | tr_full  3.9374 | tr_mis  5.3646 | val_ce 5.0528 | ppl 156.46 | acc 0.2519 | ece 0.0749 | H 4.016 | miss 0.683
+[     baseline] step 38000 | tr_full  3.9149 | tr_mis  5.3476 | val_ce 5.0685 | ppl 158.94 | acc 0.2513 | ece 0.0761 | H 3.942 | miss 0.681
+[     baseline] step 38250 | tr_full  3.9050 | tr_mis  5.3365 | val_ce 5.0684 | ppl 158.92 | acc 0.2502 | ece 0.0625 | H 4.120 | miss 0.681
+[     baseline] step 38500 | tr_full  3.8957 | tr_mis  5.3372 | val_ce 5.0675 | ppl 158.77 | acc 0.2514 | ece 0.0750 | H 4.000 | miss 0.679
+[     baseline] step 38750 | tr_full  3.8958 | tr_mis  5.3287 | val_ce 5.0622 | ppl 157.93 | acc 0.2505 | ece 0.0694 | H 4.007 | miss 0.680
+[     baseline] step 39000 | tr_full  3.8901 | tr_mis  5.3190 | val_ce 5.0638 | ppl 158.20 | acc 0.2512 | ece 0.0716 | H 3.982 | miss 0.680
+[     baseline] step 39250 | tr_full  3.8812 | tr_mis  5.3202 | val_ce 5.0444 | ppl 155.15 | acc 0.2520 | ece 0.0639 | H 4.080 | miss 0.678
+[     baseline] step 39500 | tr_full  3.8786 | tr_mis  5.3134 | val_ce 5.0498 | ppl 156.00 | acc 0.2522 | ece 0.0743 | H 3.987 | miss 0.679
+[     baseline] step 39750 | tr_full  3.8758 | tr_mis  5.3104 | val_ce 5.0896 | ppl 162.33 | acc 0.2503 | ece 0.0768 | H 3.957 | miss 0.679
+[     baseline] step 40000 | tr_full  3.8615 | tr_mis  5.3040 | val_ce 5.0623 | ppl 157.96 | acc 0.2496 | ece 0.0678 | H 4.066 | miss 0.677
+[     baseline] step 40250 | tr_full  3.8419 | tr_mis  5.2928 | val_ce 5.0843 | ppl 161.46 | acc 0.2494 | ece 0.0729 | H 4.042 | miss 0.675
+[     baseline] step 40500 | tr_full  3.8413 | tr_mis  5.2801 | val_ce 5.0676 | ppl 158.80 | acc 0.2509 | ece 0.0728 | H 4.010 | miss 0.676
+[     baseline] step 40750 | tr_full  3.8496 | tr_mis  5.2843 | val_ce 5.0498 | ppl 155.99 | acc 0.2520 | ece 0.0728 | H 3.982 | miss 0.677
+[     baseline] step 41000 | tr_full  3.8516 | tr_mis  5.2878 | val_ce 5.0637 | ppl 158.17 | acc 0.2501 | ece 0.0725 | H 3.982 | miss 0.677
+[     baseline] step 41250 | tr_full  3.8424 | tr_mis  5.2866 | val_ce 5.0795 | ppl 160.69 | acc 0.2508 | ece 0.0745 | H 4.007 | miss 0.675
+[     baseline] step 41500 | tr_full  3.8295 | tr_mis  5.2731 | val_ce 5.0637 | ppl 158.17 | acc 0.2516 | ece 0.0719 | H 4.027 | miss 0.675
+[     baseline] step 41750 | tr_full  3.8270 | tr_mis  5.2738 | val_ce 5.0772 | ppl 160.32 | acc 0.2498 | ece 0.0683 | H 4.062 | miss 0.674
+[     baseline] step 42000 | tr_full  3.8289 | tr_mis  5.2715 | val_ce 5.0858 | ppl 161.70 | acc 0.2491 | ece 0.0720 | H 4.000 | miss 0.675
+[     baseline] step 42250 | tr_full  3.8107 | tr_mis  5.2554 | val_ce 5.0789 | ppl 160.60 | acc 0.2516 | ece 0.0815 | H 3.903 | miss 0.673
+[     baseline] step 42500 | tr_full  3.8239 | tr_mis  5.2594 | val_ce 5.0814 | ppl 161.00 | acc 0.2506 | ece 0.0734 | H 3.990 | miss 0.675
+[     baseline] step 42750 | tr_full  3.8059 | tr_mis  5.2548 | val_ce 5.0702 | ppl 159.21 | acc 0.2514 | ece 0.0742 | H 3.964 | miss 0.673
+[     baseline] step 43000 | tr_full  3.8135 | tr_mis  5.2507 | val_ce 5.0731 | ppl 159.67 | acc 0.2509 | ece 0.0754 | H 3.950 | miss 0.675
+[     baseline] step 43250 | tr_full  3.8056 | tr_mis  5.2515 | val_ce 5.0662 | ppl 158.57 | acc 0.2508 | ece 0.0670 | H 4.030 | miss 0.673
+[     baseline] step 43500 | tr_full  3.7935 | tr_mis  5.2355 | val_ce 5.0894 | ppl 162.30 | acc 0.2506 | ece 0.0766 | H 3.969 | miss 0.673
+[     baseline] step 43750 | tr_full  3.7925 | tr_mis  5.2344 | val_ce 5.0777 | ppl 160.40 | acc 0.2499 | ece 0.0759 | H 3.916 | miss 0.673
+[     baseline] step 44000 | tr_full  3.7893 | tr_mis  5.2290 | val_ce 5.0857 | ppl 161.70 | acc 0.2508 | ece 0.0796 | H 3.910 | miss 0.673
+[     baseline] step 44250 | tr_full  3.7765 | tr_mis  5.2229 | val_ce 5.0831 | ppl 161.27 | acc 0.2516 | ece 0.0739 | H 3.968 | miss 0.671
+[     baseline] step 44500 | tr_full  3.7651 | tr_mis  5.2114 | val_ce 5.0700 | ppl 159.17 | acc 0.2519 | ece 0.0761 | H 3.939 | miss 0.670
+[     baseline] step 44750 | tr_full  3.7746 | tr_mis  5.2220 | val_ce 5.0842 | ppl 161.46 | acc 0.2508 | ece 0.0796 | H 3.892 | miss 0.671
+[     baseline] step 45000 | tr_full  3.7642 | tr_mis  5.2148 | val_ce 5.0767 | ppl 160.25 | acc 0.2509 | ece 0.0781 | H 3.912 | miss 0.670
+[     baseline] step 45250 | tr_full  3.7590 | tr_mis  5.2017 | val_ce 5.0856 | ppl 161.68 | acc 0.2507 | ece 0.0721 | H 3.978 | miss 0.670
+[     baseline] step 45500 | tr_full  3.7451 | tr_mis  5.1966 | val_ce 5.0769 | ppl 160.28 | acc 0.2515 | ece 0.0758 | H 3.931 | miss 0.668
+[     baseline] step 45750 | tr_full  3.7539 | tr_mis  5.2013 | val_ce 5.0720 | ppl 159.49 | acc 0.2515 | ece 0.0755 | H 3.946 | miss 0.669
+[     baseline] step 46000 | tr_full  3.7407 | tr_mis  5.1895 | val_ce 5.1014 | ppl 164.25 | acc 0.2508 | ece 0.0810 | H 3.910 | miss 0.668
+[     baseline] step 46250 | tr_full  3.7423 | tr_mis  5.1871 | val_ce 5.0871 | ppl 161.93 | acc 0.2503 | ece 0.0730 | H 3.975 | miss 0.669
+[     baseline] step 46500 | tr_full  3.7292 | tr_mis  5.1776 | val_ce 5.0800 | ppl 160.78 | acc 0.2508 | ece 0.0748 | H 3.961 | miss 0.668
+[     baseline] step 46750 | tr_full  3.7395 | tr_mis  5.1871 | val_ce 5.0829 | ppl 161.24 | acc 0.2509 | ece 0.0773 | H 3.920 | miss 0.668
+[     baseline] step 47000 | tr_full  3.7291 | tr_mis  5.1774 | val_ce 5.0979 | ppl 163.68 | acc 0.2505 | ece 0.0776 | H 3.925 | miss 0.668
+[     baseline] step 47250 | tr_full  3.7168 | tr_mis  5.1696 | val_ce 5.1021 | ppl 164.37 | acc 0.2509 | ece 0.0825 | H 3.864 | miss 0.667
+[     baseline] step 47500 | tr_full  3.7074 | tr_mis  5.1631 | val_ce 5.0794 | ppl 160.68 | acc 0.2524 | ece 0.0783 | H 3.901 | miss 0.665
+[     baseline] step 47750 | tr_full  3.7081 | tr_mis  5.1595 | val_ce 5.1041 | ppl 164.70 | acc 0.2497 | ece 0.0813 | H 3.879 | miss 0.666
+[     baseline] step 48000 | tr_full  3.7034 | tr_mis  5.1527 | val_ce 5.0965 | ppl 163.46 | acc 0.2500 | ece 0.0832 | H 3.855 | miss 0.666
+[     baseline] step 48250 | tr_full  3.6951 | tr_mis  5.1454 | val_ce 5.0948 | ppl 163.18 | acc 0.2510 | ece 0.0786 | H 3.912 | miss 0.665
+[     baseline] step 48500 | tr_full  3.6895 | tr_mis  5.1402 | val_ce 5.1219 | ppl 167.65 | acc 0.2496 | ece 0.0835 | H 3.868 | miss 0.665
+[     baseline] step 48750 | tr_full  3.6939 | tr_mis  5.1409 | val_ce 5.0897 | ppl 162.34 | acc 0.2509 | ece 0.0788 | H 3.898 | miss 0.666
+[     baseline] step 49000 | tr_full  3.7141 | tr_mis  5.1550 | val_ce 5.0900 | ppl 162.38 | acc 0.2520 | ece 0.0847 | H 3.840 | miss 0.668
+[     baseline] step 49250 | tr_full  3.6793 | tr_mis  5.1326 | val_ce 5.1269 | ppl 168.49 | acc 0.2499 | ece 0.0874 | H 3.812 | miss 0.664
+[     baseline] step 49500 | tr_full  3.6750 | tr_mis  5.1331 | val_ce 5.1082 | ppl 165.37 | acc 0.2499 | ece 0.0832 | H 3.868 | miss 0.663
+[     baseline] step 49750 | tr_full  3.6638 | tr_mis  5.1240 | val_ce 5.1160 | ppl 166.67 | acc 0.2487 | ece 0.0823 | H 3.884 | miss 0.662
+[     baseline] step 50000 | tr_full  3.6657 | tr_mis  5.1167 | val_ce 5.1225 | ppl 167.76 | acc 0.2498 | ece 0.0822 | H 3.897 | miss 0.663
+
+  Reliability [baseline]
+             bin    count     conf      acc  gap
+    [0.00,0.07]    11593    0.047    0.046  -0.001
+    [0.07,0.13]    25038    0.101    0.081  -0.020
+    [0.13,0.20]    25550    0.167    0.136  -0.031
+    [0.20,0.27]    22002    0.232    0.177  -0.055
+    [0.27,0.33]    17409    0.299    0.222  -0.077
+    [0.33,0.40]    13275    0.365    0.268  -0.097
+    [0.40,0.47]    10248    0.432    0.312  -0.120
+    [0.47,0.53]     7925    0.498    0.349  -0.149
+    [0.53,0.60]     5949    0.566    0.382  -0.184
+    [0.60,0.67]     4784    0.632    0.420  -0.212
+    [0.67,0.73]     4019    0.699    0.490  -0.210
+    [0.73,0.80]     3346    0.766    0.524  -0.242
+    [0.80,0.87]     2896    0.833    0.592  -0.241
+    [0.87,0.93]     3019    0.901    0.705  -0.195
+    [0.93,1.00]     6787    0.979    0.852  -0.127
+  saved checkpoint to baseline.pt
+
+======================================================================
+Phase 2: Mistake-only backprop
+======================================================================
+[ mistake-only] step     1 | tr_full 13.0220 | tr_mis 13.0294 | val_ce 12.3561 | ppl 232371.11 | acc 0.0452 | ece 0.0443 | H 9.942 | miss 0.998
+[ mistake-only] step   250 | tr_full  7.5470 | tr_mis  7.9927 | val_ce 7.0190 | ppl 1117.65 | acc 0.1149 | ece 0.0620 | H 7.101 | miss 0.911
+[ mistake-only] step   500 | tr_full  7.0208 | tr_mis  7.4863 | val_ce 6.7303 | ppl 837.42 | acc 0.1186 | ece 0.0644 | H 6.996 | miss 0.899
+[ mistake-only] step   750 | tr_full  6.8729 | tr_mis  7.3785 | val_ce 6.6288 | ppl 756.57 | acc 0.1168 | ece 0.0605 | H 6.981 | miss 0.890
+[ mistake-only] step  1000 | tr_full  6.7879 | tr_mis  7.3286 | val_ce 6.5568 | ppl 704.03 | acc 0.1356 | ece 0.0797 | H 7.015 | miss 0.882
+[ mistake-only] step  1250 | tr_full  6.7343 | tr_mis  7.3051 | val_ce 6.4942 | ppl 661.33 | acc 0.1255 | ece 0.0579 | H 6.856 | miss 0.876
+[ mistake-only] step  1500 | tr_full  6.6802 | tr_mis  7.2815 | val_ce 6.4446 | ppl 629.30 | acc 0.1570 | ece 0.0917 | H 6.847 | miss 0.870
+[ mistake-only] step  1750 | tr_full  6.6265 | tr_mis  7.2487 | val_ce 6.4085 | ppl 607.00 | acc 0.1557 | ece 0.0835 | H 6.775 | miss 0.865
+[ mistake-only] step  2000 | tr_full  6.5879 | tr_mis  7.2319 | val_ce 6.3639 | ppl 580.48 | acc 0.1636 | ece 0.0932 | H 6.767 | miss 0.860
+[ mistake-only] step  2250 | tr_full  6.5448 | tr_mis  7.2053 | val_ce 6.3349 | ppl 563.93 | acc 0.1484 | ece 0.0737 | H 6.789 | miss 0.858
+[ mistake-only] step  2500 | tr_full  6.5158 | tr_mis  7.1916 | val_ce 6.2906 | ppl 539.46 | acc 0.1687 | ece 0.0934 | H 6.723 | miss 0.854
+[ mistake-only] step  2750 | tr_full  6.4701 | tr_mis  7.1584 | val_ce 6.2695 | ppl 528.23 | acc 0.1684 | ece 0.0926 | H 6.725 | miss 0.852
+[ mistake-only] step  3000 | tr_full  6.4362 | tr_mis  7.1424 | val_ce 6.2311 | ppl 508.33 | acc 0.1766 | ece 0.0988 | H 6.714 | miss 0.848
+[ mistake-only] step  3250 | tr_full  6.3931 | tr_mis  7.1142 | val_ce 6.2013 | ppl 493.40 | acc 0.1706 | ece 0.0873 | H 6.628 | miss 0.845
+[ mistake-only] step  3500 | tr_full  6.3632 | tr_mis  7.0990 | val_ce 6.1659 | ppl 476.22 | acc 0.1745 | ece 0.0944 | H 6.539 | miss 0.841
+[ mistake-only] step  3750 | tr_full  6.3253 | tr_mis  7.0656 | val_ce 6.1436 | ppl 465.74 | acc 0.1812 | ece 0.1005 | H 6.606 | miss 0.840
+[ mistake-only] step  4000 | tr_full  6.2925 | tr_mis  7.0449 | val_ce 6.1016 | ppl 446.57 | acc 0.1825 | ece 0.0987 | H 6.558 | miss 0.838
+[ mistake-only] step  4250 | tr_full  6.2519 | tr_mis  7.0126 | val_ce 6.0781 | ppl 436.20 | acc 0.1770 | ece 0.0907 | H 6.467 | miss 0.835
+[ mistake-only] step  4500 | tr_full  6.2184 | tr_mis  6.9971 | val_ce 6.0542 | ppl 425.88 | acc 0.1847 | ece 0.0973 | H 6.493 | miss 0.832
+[ mistake-only] step  4750 | tr_full  6.1762 | tr_mis  6.9617 | val_ce 6.0284 | ppl 415.04 | acc 0.1826 | ece 0.0985 | H 6.514 | miss 0.830
+[ mistake-only] step  5000 | tr_full  6.1429 | tr_mis  6.9413 | val_ce 5.9982 | ppl 402.68 | acc 0.1825 | ece 0.0938 | H 6.474 | miss 0.827
+[ mistake-only] step  5250 | tr_full  6.0972 | tr_mis  6.8870 | val_ce 5.9633 | ppl 388.91 | acc 0.1886 | ece 0.1004 | H 6.407 | miss 0.827
+[ mistake-only] step  5500 | tr_full  6.0571 | tr_mis  6.8557 | val_ce 5.9188 | ppl 371.97 | acc 0.1944 | ece 0.1004 | H 6.321 | miss 0.825
+[ mistake-only] step  5750 | tr_full  6.0254 | tr_mis  6.8340 | val_ce 5.9048 | ppl 366.80 | acc 0.1910 | ece 0.0977 | H 6.352 | miss 0.823
+[ mistake-only] step  6000 | tr_full  5.9941 | tr_mis  6.8011 | val_ce 5.8697 | ppl 354.14 | acc 0.1906 | ece 0.0923 | H 6.200 | miss 0.822
+[ mistake-only] step  6250 | tr_full  5.9451 | tr_mis  6.7602 | val_ce 5.8376 | ppl 342.96 | acc 0.1902 | ece 0.0938 | H 6.251 | miss 0.819
+[ mistake-only] step  6500 | tr_full  5.9242 | tr_mis  6.7421 | val_ce 5.8170 | ppl 335.98 | acc 0.1963 | ece 0.0982 | H 6.230 | miss 0.818
+[ mistake-only] step  6750 | tr_full  5.8749 | tr_mis  6.6976 | val_ce 5.7879 | ppl 326.31 | acc 0.1982 | ece 0.1021 | H 6.291 | miss 0.816
+[ mistake-only] step  7000 | tr_full  5.8407 | tr_mis  6.6684 | val_ce 5.7650 | ppl 318.95 | acc 0.2012 | ece 0.1064 | H 6.303 | miss 0.815
+[ mistake-only] step  7250 | tr_full  5.8032 | tr_mis  6.6350 | val_ce 5.7220 | ppl 305.51 | acc 0.2028 | ece 0.1025 | H 6.167 | miss 0.813
+[ mistake-only] step  7500 | tr_full  5.7637 | tr_mis  6.5959 | val_ce 5.7082 | ppl 301.34 | acc 0.2003 | ece 0.1022 | H 6.231 | miss 0.812
+[ mistake-only] step  7750 | tr_full  5.7299 | tr_mis  6.5635 | val_ce 5.6807 | ppl 293.15 | acc 0.2012 | ece 0.1027 | H 6.215 | miss 0.810
+[ mistake-only] step  8000 | tr_full  5.6872 | tr_mis  6.5204 | val_ce 5.6544 | ppl 285.55 | acc 0.2022 | ece 0.1004 | H 6.126 | miss 0.809
+[ mistake-only] step  8250 | tr_full  5.6561 | tr_mis  6.4886 | val_ce 5.6301 | ppl 278.70 | acc 0.2035 | ece 0.1001 | H 6.140 | miss 0.808
+[ mistake-only] step  8500 | tr_full  5.6120 | tr_mis  6.4531 | val_ce 5.6000 | ppl 270.42 | acc 0.2008 | ece 0.0977 | H 6.161 | miss 0.805
+[ mistake-only] step  8750 | tr_full  5.5764 | tr_mis  6.4135 | val_ce 5.5793 | ppl 264.88 | acc 0.1999 | ece 0.0964 | H 6.109 | miss 0.805
+[ mistake-only] step  9000 | tr_full  5.5409 | tr_mis  6.3849 | val_ce 5.5675 | ppl 261.77 | acc 0.2003 | ece 0.0968 | H 6.130 | miss 0.803
+[ mistake-only] step  9250 | tr_full  5.5164 | tr_mis  6.3542 | val_ce 5.5352 | ppl 253.45 | acc 0.2048 | ece 0.0999 | H 6.056 | miss 0.803
+[ mistake-only] step  9500 | tr_full  5.4889 | tr_mis  6.3243 | val_ce 5.5072 | ppl 246.47 | acc 0.2104 | ece 0.1035 | H 6.047 | miss 0.803
+[ mistake-only] step  9750 | tr_full  5.4513 | tr_mis  6.2896 | val_ce 5.4856 | ppl 241.20 | acc 0.2051 | ece 0.0975 | H 6.009 | miss 0.801
+[ mistake-only] step 10000 | tr_full  5.4232 | tr_mis  6.2665 | val_ce 5.4656 | ppl 236.41 | acc 0.2031 | ece 0.0947 | H 5.932 | miss 0.799
+[ mistake-only] step 10250 | tr_full  5.3734 | tr_mis  6.2220 | val_ce 5.4450 | ppl 231.60 | acc 0.2035 | ece 0.0924 | H 5.925 | miss 0.797
+[ mistake-only] step 10500 | tr_full  5.3423 | tr_mis  6.1877 | val_ce 5.4311 | ppl 228.40 | acc 0.2116 | ece 0.1019 | H 5.987 | miss 0.797
+[ mistake-only] step 10750 | tr_full  5.3212 | tr_mis  6.1686 | val_ce 5.4128 | ppl 224.25 | acc 0.2113 | ece 0.0990 | H 5.905 | miss 0.796
+[ mistake-only] step 11000 | tr_full  5.2961 | tr_mis  6.1452 | val_ce 5.3838 | ppl 217.85 | acc 0.2133 | ece 0.0974 | H 5.802 | miss 0.795
+[ mistake-only] step 11250 | tr_full  5.2661 | tr_mis  6.1131 | val_ce 5.3848 | ppl 218.06 | acc 0.2030 | ece 0.0903 | H 5.840 | miss 0.794
+[ mistake-only] step 11500 | tr_full  5.2574 | tr_mis  6.1043 | val_ce 5.3693 | ppl 214.71 | acc 0.2083 | ece 0.0892 | H 5.706 | miss 0.793
+[ mistake-only] step 11750 | tr_full  5.2176 | tr_mis  6.0631 | val_ce 5.3428 | ppl 209.09 | acc 0.2100 | ece 0.0941 | H 5.784 | miss 0.792
+[ mistake-only] step 12000 | tr_full  5.1937 | tr_mis  6.0457 | val_ce 5.3401 | ppl 208.52 | acc 0.2068 | ece 0.0909 | H 5.739 | miss 0.790
+[ mistake-only] step 12250 | tr_full  5.1587 | tr_mis  6.0127 | val_ce 5.3310 | ppl 206.64 | acc 0.2091 | ece 0.0937 | H 5.752 | miss 0.789
+[ mistake-only] step 12500 | tr_full  5.1381 | tr_mis  5.9964 | val_ce 5.3218 | ppl 204.76 | acc 0.2087 | ece 0.0914 | H 5.750 | miss 0.788
+[ mistake-only] step 12750 | tr_full  5.1134 | tr_mis  5.9726 | val_ce 5.2975 | ppl 199.84 | acc 0.2098 | ece 0.0910 | H 5.747 | miss 0.787
+[ mistake-only] step 13000 | tr_full  5.1039 | tr_mis  5.9610 | val_ce 5.2949 | ppl 199.32 | acc 0.2125 | ece 0.0953 | H 5.751 | miss 0.787
+[ mistake-only] step 13250 | tr_full  5.0865 | tr_mis  5.9437 | val_ce 5.2822 | ppl 196.80 | acc 0.2125 | ece 0.0935 | H 5.673 | miss 0.786
+[ mistake-only] step 13500 | tr_full  5.0664 | tr_mis  5.9247 | val_ce 5.2579 | ppl 192.07 | acc 0.2175 | ece 0.0960 | H 5.645 | miss 0.785
+[ mistake-only] step 13750 | tr_full  5.0326 | tr_mis  5.8905 | val_ce 5.2647 | ppl 193.39 | acc 0.2115 | ece 0.0906 | H 5.639 | miss 0.784
+[ mistake-only] step 14000 | tr_full  5.0050 | tr_mis  5.8658 | val_ce 5.2489 | ppl 190.36 | acc 0.2155 | ece 0.0920 | H 5.574 | miss 0.783
+[ mistake-only] step 14250 | tr_full  5.0101 | tr_mis  5.8731 | val_ce 5.2428 | ppl 189.21 | acc 0.2139 | ece 0.0916 | H 5.629 | miss 0.782
+[ mistake-only] step 14500 | tr_full  4.9849 | tr_mis  5.8481 | val_ce 5.2524 | ppl 191.02 | acc 0.2107 | ece 0.0888 | H 5.618 | miss 0.782
+[ mistake-only] step 14750 | tr_full  4.9496 | tr_mis  5.8158 | val_ce 5.2356 | ppl 187.83 | acc 0.2129 | ece 0.0885 | H 5.512 | miss 0.780
+[ mistake-only] step 15000 | tr_full  4.9405 | tr_mis  5.8043 | val_ce 5.2193 | ppl 184.81 | acc 0.2150 | ece 0.0833 | H 5.475 | miss 0.780
+[ mistake-only] step 15250 | tr_full  4.9277 | tr_mis  5.7932 | val_ce 5.2105 | ppl 183.18 | acc 0.2182 | ece 0.0880 | H 5.454 | miss 0.779
+[ mistake-only] step 15500 | tr_full  4.9085 | tr_mis  5.7747 | val_ce 5.2016 | ppl 181.57 | acc 0.2187 | ece 0.0931 | H 5.552 | miss 0.778
+[ mistake-only] step 15750 | tr_full  4.8973 | tr_mis  5.7617 | val_ce 5.2015 | ppl 181.54 | acc 0.2148 | ece 0.0865 | H 5.484 | miss 0.778
+[ mistake-only] step 16000 | tr_full  4.8688 | tr_mis  5.7423 | val_ce 5.1900 | ppl 179.46 | acc 0.2180 | ece 0.0869 | H 5.473 | miss 0.776
+[ mistake-only] step 16250 | tr_full  4.8597 | tr_mis  5.7305 | val_ce 5.1831 | ppl 178.24 | acc 0.2186 | ece 0.0868 | H 5.419 | miss 0.776
+[ mistake-only] step 16500 | tr_full  4.8645 | tr_mis  5.7338 | val_ce 5.1785 | ppl 177.41 | acc 0.2182 | ece 0.0880 | H 5.485 | miss 0.776
+[ mistake-only] step 16750 | tr_full  4.8373 | tr_mis  5.7071 | val_ce 5.1926 | ppl 179.94 | acc 0.2109 | ece 0.0838 | H 5.452 | miss 0.775
+[ mistake-only] step 17000 | tr_full  4.8034 | tr_mis  5.6838 | val_ce 5.1884 | ppl 179.18 | acc 0.2190 | ece 0.0888 | H 5.436 | miss 0.772
+[ mistake-only] step 17250 | tr_full  4.8076 | tr_mis  5.6785 | val_ce 5.1702 | ppl 175.94 | acc 0.2187 | ece 0.0883 | H 5.436 | miss 0.774
+[ mistake-only] step 17500 | tr_full  4.7887 | tr_mis  5.6666 | val_ce 5.1676 | ppl 175.49 | acc 0.2208 | ece 0.0854 | H 5.353 | miss 0.772
+[ mistake-only] step 17750 | tr_full  4.7898 | tr_mis  5.6641 | val_ce 5.1742 | ppl 176.66 | acc 0.2162 | ece 0.0837 | H 5.383 | miss 0.773
+[ mistake-only] step 18000 | tr_full  4.7786 | tr_mis  5.6482 | val_ce 5.1583 | ppl 173.87 | acc 0.2218 | ece 0.0942 | H 5.474 | miss 0.773
+[ mistake-only] step 18250 | tr_full  4.7440 | tr_mis  5.6228 | val_ce 5.1607 | ppl 174.28 | acc 0.2161 | ece 0.0852 | H 5.385 | miss 0.770
+[ mistake-only] step 18500 | tr_full  4.7490 | tr_mis  5.6196 | val_ce 5.1531 | ppl 172.96 | acc 0.2205 | ece 0.0874 | H 5.384 | miss 0.772
+[ mistake-only] step 18750 | tr_full  4.7140 | tr_mis  5.5930 | val_ce 5.1473 | ppl 171.96 | acc 0.2206 | ece 0.0872 | H 5.370 | miss 0.769
+[ mistake-only] step 19000 | tr_full  4.7069 | tr_mis  5.5904 | val_ce 5.1555 | ppl 173.38 | acc 0.2178 | ece 0.0876 | H 5.446 | miss 0.768
+[ mistake-only] step 19250 | tr_full  4.7098 | tr_mis  5.5904 | val_ce 5.1529 | ppl 172.93 | acc 0.2201 | ece 0.0839 | H 5.374 | miss 0.769
+[ mistake-only] step 19500 | tr_full  4.6932 | tr_mis  5.5739 | val_ce 5.1488 | ppl 172.23 | acc 0.2199 | ece 0.0812 | H 5.300 | miss 0.768
+[ mistake-only] step 19750 | tr_full  4.6787 | tr_mis  5.5632 | val_ce 5.1379 | ppl 170.36 | acc 0.2220 | ece 0.0858 | H 5.322 | miss 0.767
+[ mistake-only] step 20000 | tr_full  4.6643 | tr_mis  5.5451 | val_ce 5.1421 | ppl 171.08 | acc 0.2190 | ece 0.0823 | H 5.334 | miss 0.767
+[ mistake-only] step 20250 | tr_full  4.6580 | tr_mis  5.5358 | val_ce 5.1630 | ppl 174.69 | acc 0.2124 | ece 0.0794 | H 5.340 | miss 0.767
+[ mistake-only] step 20500 | tr_full  4.6380 | tr_mis  5.5260 | val_ce 5.1537 | ppl 173.07 | acc 0.2169 | ece 0.0846 | H 5.425 | miss 0.765
+[ mistake-only] step 20750 | tr_full  4.6261 | tr_mis  5.5091 | val_ce 5.1429 | ppl 171.21 | acc 0.2202 | ece 0.0859 | H 5.353 | miss 0.765
+[ mistake-only] step 21000 | tr_full  4.6213 | tr_mis  5.5078 | val_ce 5.1317 | ppl 169.31 | acc 0.2194 | ece 0.0822 | H 5.342 | miss 0.764
+[ mistake-only] step 21250 | tr_full  4.6028 | tr_mis  5.4887 | val_ce 5.1286 | ppl 168.78 | acc 0.2213 | ece 0.0823 | H 5.249 | miss 0.764
+[ mistake-only] step 21500 | tr_full  4.6004 | tr_mis  5.4874 | val_ce 5.1326 | ppl 169.47 | acc 0.2184 | ece 0.0809 | H 5.302 | miss 0.763
+[ mistake-only] step 21750 | tr_full  4.5994 | tr_mis  5.4804 | val_ce 5.1352 | ppl 169.90 | acc 0.2199 | ece 0.0837 | H 5.337 | miss 0.764
+[ mistake-only] step 22000 | tr_full  4.5900 | tr_mis  5.4719 | val_ce 5.1466 | ppl 171.84 | acc 0.2193 | ece 0.0804 | H 5.303 | miss 0.764
+[ mistake-only] step 22250 | tr_full  4.5847 | tr_mis  5.4684 | val_ce 5.1209 | ppl 167.48 | acc 0.2200 | ece 0.0800 | H 5.261 | miss 0.763
+[ mistake-only] step 22500 | tr_full  4.5737 | tr_mis  5.4536 | val_ce 5.1193 | ppl 167.22 | acc 0.2173 | ece 0.0768 | H 5.236 | miss 0.764
+[ mistake-only] step 22750 | tr_full  4.5479 | tr_mis  5.4390 | val_ce 5.1173 | ppl 166.88 | acc 0.2180 | ece 0.0749 | H 5.189 | miss 0.760
+[ mistake-only] step 23000 | tr_full  4.5470 | tr_mis  5.4324 | val_ce 5.1254 | ppl 168.23 | acc 0.2175 | ece 0.0790 | H 5.290 | miss 0.762
+[ mistake-only] step 23250 | tr_full  4.5397 | tr_mis  5.4239 | val_ce 5.1284 | ppl 168.75 | acc 0.2194 | ece 0.0754 | H 5.202 | miss 0.762
+[ mistake-only] step 23500 | tr_full  4.5275 | tr_mis  5.4141 | val_ce 5.1166 | ppl 166.76 | acc 0.2215 | ece 0.0769 | H 5.174 | miss 0.760
+[ mistake-only] step 23750 | tr_full  4.5142 | tr_mis  5.3992 | val_ce 5.1246 | ppl 168.11 | acc 0.2231 | ece 0.0790 | H 5.212 | miss 0.760
+[ mistake-only] step 24000 | tr_full  4.4931 | tr_mis  5.3829 | val_ce 5.1270 | ppl 168.52 | acc 0.2200 | ece 0.0752 | H 5.148 | miss 0.759
+[ mistake-only] step 24250 | tr_full  4.4955 | tr_mis  5.3841 | val_ce 5.1227 | ppl 167.79 | acc 0.2217 | ece 0.0787 | H 5.209 | miss 0.759
+[ mistake-only] step 24500 | tr_full  4.4847 | tr_mis  5.3698 | val_ce 5.1200 | ppl 167.33 | acc 0.2197 | ece 0.0755 | H 5.218 | miss 0.759
+[ mistake-only] step 24750 | tr_full  4.4773 | tr_mis  5.3648 | val_ce 5.1344 | ppl 169.76 | acc 0.2149 | ece 0.0708 | H 5.172 | miss 0.758
+[ mistake-only] step 25000 | tr_full  4.4708 | tr_mis  5.3628 | val_ce 5.1191 | ppl 167.18 | acc 0.2204 | ece 0.0777 | H 5.212 | miss 0.757
+[ mistake-only] step 25250 | tr_full  4.4607 | tr_mis  5.3478 | val_ce 5.1217 | ppl 167.61 | acc 0.2199 | ece 0.0788 | H 5.247 | miss 0.758
+[ mistake-only] step 25500 | tr_full  4.4560 | tr_mis  5.3408 | val_ce 5.1244 | ppl 168.08 | acc 0.2186 | ece 0.0741 | H 5.219 | miss 0.758
+[ mistake-only] step 25750 | tr_full  4.4421 | tr_mis  5.3337 | val_ce 5.0990 | ppl 163.86 | acc 0.2203 | ece 0.0731 | H 5.130 | miss 0.756
+[ mistake-only] step 26000 | tr_full  4.4345 | tr_mis  5.3194 | val_ce 5.1186 | ppl 167.10 | acc 0.2165 | ece 0.0707 | H 5.163 | miss 0.757
+[ mistake-only] step 26250 | tr_full  4.4272 | tr_mis  5.3152 | val_ce 5.1042 | ppl 164.71 | acc 0.2210 | ece 0.0750 | H 5.119 | miss 0.756
+[ mistake-only] step 26500 | tr_full  4.4275 | tr_mis  5.3145 | val_ce 5.1066 | ppl 165.11 | acc 0.2169 | ece 0.0713 | H 5.165 | miss 0.756
+[ mistake-only] step 26750 | tr_full  4.4176 | tr_mis  5.3075 | val_ce 5.1136 | ppl 166.27 | acc 0.2194 | ece 0.0718 | H 5.126 | miss 0.755
+[ mistake-only] step 27000 | tr_full  4.3969 | tr_mis  5.2855 | val_ce 5.1235 | ppl 167.92 | acc 0.2190 | ece 0.0735 | H 5.180 | miss 0.755
+[ mistake-only] step 27250 | tr_full  4.3761 | tr_mis  5.2707 | val_ce 5.1098 | ppl 165.64 | acc 0.2170 | ece 0.0703 | H 5.155 | miss 0.753
+[ mistake-only] step 27500 | tr_full  4.3801 | tr_mis  5.2710 | val_ce 5.1128 | ppl 166.14 | acc 0.2205 | ece 0.0750 | H 5.179 | miss 0.754
+[ mistake-only] step 27750 | tr_full  4.3666 | tr_mis  5.2625 | val_ce 5.1130 | ppl 166.17 | acc 0.2176 | ece 0.0692 | H 5.089 | miss 0.752
+[ mistake-only] step 28000 | tr_full  4.3616 | tr_mis  5.2531 | val_ce 5.0986 | ppl 163.79 | acc 0.2239 | ece 0.0702 | H 5.037 | miss 0.753
+[ mistake-only] step 28250 | tr_full  4.3537 | tr_mis  5.2485 | val_ce 5.0897 | ppl 162.34 | acc 0.2248 | ece 0.0710 | H 5.029 | miss 0.752
+[ mistake-only] step 28500 | tr_full  4.3619 | tr_mis  5.2529 | val_ce 5.1049 | ppl 164.82 | acc 0.2188 | ece 0.0711 | H 5.113 | miss 0.753
+[ mistake-only] step 28750 | tr_full  4.3334 | tr_mis  5.2287 | val_ce 5.1039 | ppl 164.66 | acc 0.2211 | ece 0.0741 | H 5.138 | miss 0.751
+[ mistake-only] step 29000 | tr_full  4.3565 | tr_mis  5.2472 | val_ce 5.0905 | ppl 162.47 | acc 0.2206 | ece 0.0708 | H 5.065 | miss 0.752
+[ mistake-only] step 29250 | tr_full  4.3256 | tr_mis  5.2228 | val_ce 5.0939 | ppl 163.02 | acc 0.2228 | ece 0.0695 | H 5.024 | miss 0.750
+[ mistake-only] step 29500 | tr_full  4.3136 | tr_mis  5.2106 | val_ce 5.0928 | ppl 162.84 | acc 0.2214 | ece 0.0702 | H 5.032 | miss 0.750
+[ mistake-only] step 29750 | tr_full  4.3295 | tr_mis  5.2184 | val_ce 5.0789 | ppl 160.60 | acc 0.2208 | ece 0.0675 | H 5.010 | miss 0.752
+[ mistake-only] step 30000 | tr_full  4.3173 | tr_mis  5.2080 | val_ce 5.0931 | ppl 162.89 | acc 0.2202 | ece 0.0703 | H 5.093 | miss 0.751
+[ mistake-only] step 30250 | tr_full  4.2936 | tr_mis  5.1900 | val_ce 5.0857 | ppl 161.70 | acc 0.2249 | ece 0.0690 | H 5.005 | miss 0.749
+[ mistake-only] step 30500 | tr_full  4.2938 | tr_mis  5.1820 | val_ce 5.0972 | ppl 163.56 | acc 0.2224 | ece 0.0687 | H 5.032 | miss 0.750
+[ mistake-only] step 30750 | tr_full  4.2872 | tr_mis  5.1786 | val_ce 5.1088 | ppl 165.47 | acc 0.2203 | ece 0.0672 | H 4.994 | miss 0.749
+[ mistake-only] step 31000 | tr_full  4.2705 | tr_mis  5.1698 | val_ce 5.0878 | ppl 162.02 | acc 0.2239 | ece 0.0721 | H 5.057 | miss 0.747
+[ mistake-only] step 31250 | tr_full  4.2536 | tr_mis  5.1491 | val_ce 5.1011 | ppl 164.20 | acc 0.2221 | ece 0.0677 | H 5.011 | miss 0.747
+[ mistake-only] step 31500 | tr_full  4.2606 | tr_mis  5.1559 | val_ce 5.0885 | ppl 162.15 | acc 0.2231 | ece 0.0715 | H 5.033 | miss 0.747
+[ mistake-only] step 31750 | tr_full  4.2511 | tr_mis  5.1407 | val_ce 5.1114 | ppl 165.91 | acc 0.2210 | ece 0.0669 | H 5.008 | miss 0.748
+[ mistake-only] step 32000 | tr_full  4.2688 | tr_mis  5.1548 | val_ce 5.0911 | ppl 162.57 | acc 0.2225 | ece 0.0682 | H 4.996 | miss 0.750
+[ mistake-only] step 32250 | tr_full  4.2381 | tr_mis  5.1339 | val_ce 5.1067 | ppl 165.13 | acc 0.2211 | ece 0.0681 | H 5.041 | miss 0.746
+[ mistake-only] step 32500 | tr_full  4.2451 | tr_mis  5.1406 | val_ce 5.0915 | ppl 162.64 | acc 0.2191 | ece 0.0637 | H 4.944 | miss 0.747
+[ mistake-only] step 32750 | tr_full  4.2068 | tr_mis  5.1100 | val_ce 5.0964 | ppl 163.43 | acc 0.2186 | ece 0.0647 | H 5.020 | miss 0.744
+[ mistake-only] step 33000 | tr_full  4.2069 | tr_mis  5.1055 | val_ce 5.0823 | ppl 161.15 | acc 0.2245 | ece 0.0675 | H 4.993 | miss 0.744
+[ mistake-only] step 33250 | tr_full  4.2019 | tr_mis  5.0983 | val_ce 5.0774 | ppl 160.35 | acc 0.2252 | ece 0.0708 | H 4.970 | miss 0.744
+[ mistake-only] step 33500 | tr_full  4.2047 | tr_mis  5.1023 | val_ce 5.1107 | ppl 165.78 | acc 0.2183 | ece 0.0655 | H 5.033 | miss 0.744
+[ mistake-only] step 33750 | tr_full  4.2058 | tr_mis  5.1005 | val_ce 5.1046 | ppl 164.78 | acc 0.2219 | ece 0.0679 | H 5.024 | miss 0.745
+[ mistake-only] step 34000 | tr_full  4.1781 | tr_mis  5.0803 | val_ce 5.0947 | ppl 163.16 | acc 0.2252 | ece 0.0681 | H 4.993 | miss 0.742
+[ mistake-only] step 34250 | tr_full  4.1912 | tr_mis  5.0870 | val_ce 5.0922 | ppl 162.74 | acc 0.2208 | ece 0.0612 | H 4.877 | miss 0.744
+[ mistake-only] step 34500 | tr_full  4.1766 | tr_mis  5.0731 | val_ce 5.0921 | ppl 162.73 | acc 0.2237 | ece 0.0649 | H 4.888 | miss 0.743
+[ mistake-only] step 34750 | tr_full  4.1773 | tr_mis  5.0719 | val_ce 5.0923 | ppl 162.76 | acc 0.2196 | ece 0.0641 | H 4.981 | miss 0.744
+[ mistake-only] step 35000 | tr_full  4.1744 | tr_mis  5.0683 | val_ce 5.0953 | ppl 163.25 | acc 0.2219 | ece 0.0643 | H 4.945 | miss 0.744
+[ mistake-only] step 35250 | tr_full  4.1596 | tr_mis  5.0579 | val_ce 5.0912 | ppl 162.59 | acc 0.2205 | ece 0.0604 | H 4.881 | miss 0.742
+[ mistake-only] step 35500 | tr_full  4.1562 | tr_mis  5.0512 | val_ce 5.0958 | ppl 163.33 | acc 0.2217 | ece 0.0654 | H 4.957 | miss 0.743
+[ mistake-only] step 35750 | tr_full  4.1490 | tr_mis  5.0466 | val_ce 5.0976 | ppl 163.63 | acc 0.2214 | ece 0.0652 | H 4.996 | miss 0.742
+[ mistake-only] step 36000 | tr_full  4.1512 | tr_mis  5.0461 | val_ce 5.0822 | ppl 161.13 | acc 0.2233 | ece 0.0652 | H 4.938 | miss 0.743
+[ mistake-only] step 36250 | tr_full  4.1403 | tr_mis  5.0369 | val_ce 5.1125 | ppl 166.09 | acc 0.2178 | ece 0.0599 | H 4.950 | miss 0.742
+[ mistake-only] step 36500 | tr_full  4.1299 | tr_mis  5.0325 | val_ce 5.0992 | ppl 163.89 | acc 0.2214 | ece 0.0645 | H 4.953 | miss 0.740
+[ mistake-only] step 36750 | tr_full  4.1284 | tr_mis  5.0255 | val_ce 5.0882 | ppl 162.09 | acc 0.2244 | ece 0.0635 | H 4.885 | miss 0.741
+[ mistake-only] step 37000 | tr_full  4.1298 | tr_mis  5.0281 | val_ce 5.0982 | ppl 163.73 | acc 0.2202 | ece 0.0613 | H 4.926 | miss 0.741
+[ mistake-only] step 37250 | tr_full  4.1172 | tr_mis  5.0103 | val_ce 5.0922 | ppl 162.75 | acc 0.2237 | ece 0.0660 | H 4.952 | miss 0.741
+[ mistake-only] step 37500 | tr_full  4.1143 | tr_mis  5.0122 | val_ce 5.0993 | ppl 163.91 | acc 0.2209 | ece 0.0631 | H 4.943 | miss 0.740
+[ mistake-only] step 37750 | tr_full  4.1220 | tr_mis  5.0156 | val_ce 5.0872 | ppl 161.93 | acc 0.2229 | ece 0.0655 | H 4.981 | miss 0.741
+[ mistake-only] step 38000 | tr_full  4.1020 | tr_mis  4.9969 | val_ce 5.1019 | ppl 164.34 | acc 0.2193 | ece 0.0565 | H 4.850 | miss 0.740
+[ mistake-only] step 38250 | tr_full  4.0926 | tr_mis  4.9869 | val_ce 5.1025 | ppl 164.43 | acc 0.2225 | ece 0.0625 | H 4.901 | miss 0.740
+[ mistake-only] step 38500 | tr_full  4.0838 | tr_mis  4.9849 | val_ce 5.0979 | ppl 163.68 | acc 0.2228 | ece 0.0634 | H 4.893 | miss 0.738
+[ mistake-only] step 38750 | tr_full  4.0832 | tr_mis  4.9788 | val_ce 5.1061 | ppl 165.02 | acc 0.2218 | ece 0.0598 | H 4.845 | miss 0.739
+[ mistake-only] step 39000 | tr_full  4.0775 | tr_mis  4.9708 | val_ce 5.0869 | ppl 161.88 | acc 0.2223 | ece 0.0620 | H 4.885 | miss 0.739
+[ mistake-only] step 39250 | tr_full  4.0731 | tr_mis  4.9680 | val_ce 5.0894 | ppl 162.30 | acc 0.2219 | ece 0.0617 | H 4.888 | miss 0.738
+[ mistake-only] step 39500 | tr_full  4.0681 | tr_mis  4.9619 | val_ce 5.0824 | ppl 161.16 | acc 0.2241 | ece 0.0593 | H 4.812 | miss 0.739
+[ mistake-only] step 39750 | tr_full  4.0615 | tr_mis  4.9574 | val_ce 5.0991 | ppl 163.88 | acc 0.2198 | ece 0.0584 | H 4.856 | miss 0.738
+[ mistake-only] step 40000 | tr_full  4.0514 | tr_mis  4.9488 | val_ce 5.0941 | ppl 163.06 | acc 0.2217 | ece 0.0589 | H 4.866 | miss 0.737
+[ mistake-only] step 40250 | tr_full  4.0332 | tr_mis  4.9380 | val_ce 5.0995 | ppl 163.94 | acc 0.2208 | ece 0.0625 | H 4.907 | miss 0.735
+[ mistake-only] step 40500 | tr_full  4.0336 | tr_mis  4.9335 | val_ce 5.0950 | ppl 163.21 | acc 0.2229 | ece 0.0580 | H 4.809 | miss 0.735
+[ mistake-only] step 40750 | tr_full  4.0424 | tr_mis  4.9370 | val_ce 5.0873 | ppl 161.94 | acc 0.2239 | ece 0.0575 | H 4.806 | miss 0.737
+[ mistake-only] step 41000 | tr_full  4.0421 | tr_mis  4.9361 | val_ce 5.0904 | ppl 162.45 | acc 0.2175 | ece 0.0547 | H 4.823 | miss 0.737
+[ mistake-only] step 41250 | tr_full  4.0340 | tr_mis  4.9322 | val_ce 5.0998 | ppl 163.99 | acc 0.2216 | ece 0.0591 | H 4.867 | miss 0.736
+[ mistake-only] step 41500 | tr_full  4.0222 | tr_mis  4.9239 | val_ce 5.0910 | ppl 162.55 | acc 0.2229 | ece 0.0588 | H 4.837 | miss 0.735
+[ mistake-only] step 41750 | tr_full  4.0203 | tr_mis  4.9196 | val_ce 5.1046 | ppl 164.77 | acc 0.2185 | ece 0.0555 | H 4.853 | miss 0.735
+[ mistake-only] step 42000 | tr_full  4.0199 | tr_mis  4.9191 | val_ce 5.1126 | ppl 166.11 | acc 0.2191 | ece 0.0559 | H 4.828 | miss 0.735
+[ mistake-only] step 42250 | tr_full  4.0051 | tr_mis  4.9023 | val_ce 5.0975 | ppl 163.61 | acc 0.2220 | ece 0.0562 | H 4.811 | miss 0.735
+[ mistake-only] step 42500 | tr_full  4.0165 | tr_mis  4.9112 | val_ce 5.1028 | ppl 164.48 | acc 0.2223 | ece 0.0603 | H 4.844 | miss 0.736
+[ mistake-only] step 42750 | tr_full  4.0000 | tr_mis  4.8997 | val_ce 5.0906 | ppl 162.49 | acc 0.2237 | ece 0.0566 | H 4.753 | miss 0.734
+[ mistake-only] step 43000 | tr_full  4.0059 | tr_mis  4.9015 | val_ce 5.1025 | ppl 164.44 | acc 0.2203 | ece 0.0573 | H 4.833 | miss 0.735
+[ mistake-only] step 43250 | tr_full  3.9990 | tr_mis  4.8972 | val_ce 5.1008 | ppl 164.15 | acc 0.2216 | ece 0.0574 | H 4.841 | miss 0.734
+[ mistake-only] step 43500 | tr_full  3.9871 | tr_mis  4.8878 | val_ce 5.1021 | ppl 164.37 | acc 0.2201 | ece 0.0529 | H 4.773 | miss 0.733
+[ mistake-only] step 43750 | tr_full  3.9885 | tr_mis  4.8871 | val_ce 5.0920 | ppl 162.72 | acc 0.2252 | ece 0.0561 | H 4.750 | miss 0.734
+[ mistake-only] step 44000 | tr_full  3.9826 | tr_mis  4.8789 | val_ce 5.1121 | ppl 166.02 | acc 0.2172 | ece 0.0511 | H 4.787 | miss 0.734
+[ mistake-only] step 44250 | tr_full  3.9714 | tr_mis  4.8697 | val_ce 5.1011 | ppl 164.21 | acc 0.2229 | ece 0.0539 | H 4.758 | miss 0.732
+[ mistake-only] step 44500 | tr_full  3.9593 | tr_mis  4.8620 | val_ce 5.1073 | ppl 165.22 | acc 0.2185 | ece 0.0528 | H 4.780 | miss 0.731
+[ mistake-only] step 44750 | tr_full  3.9722 | tr_mis  4.8715 | val_ce 5.1042 | ppl 164.71 | acc 0.2212 | ece 0.0542 | H 4.763 | miss 0.733
+[ mistake-only] step 45000 | tr_full  3.9622 | tr_mis  4.8620 | val_ce 5.1001 | ppl 164.05 | acc 0.2199 | ece 0.0515 | H 4.740 | miss 0.732
+[ mistake-only] step 45250 | tr_full  3.9562 | tr_mis  4.8518 | val_ce 5.1123 | ppl 166.06 | acc 0.2187 | ece 0.0526 | H 4.793 | miss 0.732
+[ mistake-only] step 45500 | tr_full  3.9457 | tr_mis  4.8420 | val_ce 5.0862 | ppl 161.78 | acc 0.2229 | ece 0.0552 | H 4.738 | miss 0.732
+[ mistake-only] step 45750 | tr_full  3.9482 | tr_mis  4.8474 | val_ce 5.0995 | ppl 163.95 | acc 0.2208 | ece 0.0559 | H 4.803 | miss 0.731
+[ mistake-only] step 46000 | tr_full  3.9375 | tr_mis  4.8339 | val_ce 5.1049 | ppl 164.83 | acc 0.2222 | ece 0.0519 | H 4.748 | miss 0.732
+[ mistake-only] step 46250 | tr_full  3.9377 | tr_mis  4.8366 | val_ce 5.1032 | ppl 164.55 | acc 0.2215 | ece 0.0535 | H 4.740 | miss 0.731
+[ mistake-only] step 46500 | tr_full  3.9296 | tr_mis  4.8235 | val_ce 5.1061 | ppl 165.02 | acc 0.2205 | ece 0.0516 | H 4.741 | miss 0.731
+[ mistake-only] step 46750 | tr_full  3.9384 | tr_mis  4.8363 | val_ce 5.0997 | ppl 163.97 | acc 0.2240 | ece 0.0576 | H 4.788 | miss 0.731
+[ mistake-only] step 47000 | tr_full  3.9254 | tr_mis  4.8214 | val_ce 5.1235 | ppl 167.92 | acc 0.2190 | ece 0.0514 | H 4.766 | miss 0.731
+[ mistake-only] step 47250 | tr_full  3.9168 | tr_mis  4.8164 | val_ce 5.1057 | ppl 164.96 | acc 0.2211 | ece 0.0475 | H 4.662 | miss 0.730
+[ mistake-only] step 47500 | tr_full  3.9065 | tr_mis  4.8063 | val_ce 5.0958 | ppl 163.33 | acc 0.2247 | ece 0.0539 | H 4.725 | miss 0.729
+[ mistake-only] step 47750 | tr_full  3.9066 | tr_mis  4.8046 | val_ce 5.1018 | ppl 164.31 | acc 0.2230 | ece 0.0518 | H 4.707 | miss 0.729
+[ mistake-only] step 48000 | tr_full  3.9049 | tr_mis  4.8020 | val_ce 5.1005 | ppl 164.11 | acc 0.2214 | ece 0.0479 | H 4.662 | miss 0.729
+[ mistake-only] step 48250 | tr_full  3.8941 | tr_mis  4.7956 | val_ce 5.1068 | ppl 165.14 | acc 0.2204 | ece 0.0486 | H 4.692 | miss 0.728
+[ mistake-only] step 48500 | tr_full  3.8905 | tr_mis  4.7900 | val_ce 5.1144 | ppl 166.40 | acc 0.2218 | ece 0.0484 | H 4.678 | miss 0.728
+[ mistake-only] step 48750 | tr_full  3.8943 | tr_mis  4.7873 | val_ce 5.1038 | ppl 164.64 | acc 0.2228 | ece 0.0484 | H 4.642 | miss 0.730
+[ mistake-only] step 49000 | tr_full  3.9100 | tr_mis  4.7953 | val_ce 5.1186 | ppl 167.11 | acc 0.2177 | ece 0.0457 | H 4.689 | miss 0.732
+[ mistake-only] step 49250 | tr_full  3.8822 | tr_mis  4.7799 | val_ce 5.1174 | ppl 166.90 | acc 0.2229 | ece 0.0481 | H 4.629 | miss 0.728
+[ mistake-only] step 49500 | tr_full  3.8787 | tr_mis  4.7763 | val_ce 5.1111 | ppl 165.86 | acc 0.2219 | ece 0.0490 | H 4.664 | miss 0.728
+[ mistake-only] step 49750 | tr_full  3.8683 | tr_mis  4.7709 | val_ce 5.1083 | ppl 165.38 | acc 0.2204 | ece 0.0507 | H 4.753 | miss 0.726
+[ mistake-only] step 50000 | tr_full  3.8670 | tr_mis  4.7648 | val_ce 5.1143 | ppl 166.38 | acc 0.2195 | ece 0.0497 | H 4.736 | miss 0.727
+
+  Reliability [mistake-only]
+             bin    count     conf      acc  gap
+    [0.00,0.07]    22843    0.047    0.063  +0.016
+    [0.07,0.13]    56064    0.100    0.145  +0.045
+    [0.13,0.20]    40106    0.164    0.217  +0.053
+    [0.20,0.27]    20242    0.229    0.296  +0.067
+    [0.27,0.33]     9612    0.296    0.371  +0.075
+    [0.33,0.40]     4993    0.363    0.440  +0.076
+    [0.40,0.47]     3036    0.430    0.491  +0.061
+    [0.47,0.53]     2047    0.497    0.573  +0.075
+    [0.53,0.60]     1262    0.564    0.591  +0.028
+    [0.60,0.67]      962    0.632    0.612  -0.019
+    [0.67,0.73]      725    0.699    0.694  -0.006
+    [0.73,0.80]      580    0.765    0.690  -0.075
+    [0.80,0.87]      519    0.831    0.697  -0.134
+    [0.87,0.93]      395    0.901    0.739  -0.162
+    [0.93,1.00]      454    0.969    0.824  -0.146
+  saved checkpoint to mistake_only.pt
+
+======================================================================
+FINAL COMPARISON
+======================================================================
+Metric                     Baseline   Mistake-only        Delta
+--------------------------------------------------------------
+val_ce (loss)                5.1225         5.1143      -0.0082
+perplexity                 167.7604       166.3824      -1.3779
+top-1 accuracy               0.2498         0.2195      -0.0303
+Brier score                  0.8946         0.9134      +0.0188
+entropy (nats)               3.8971         4.7363      +0.8391
+ECE                          0.0822         0.0497      -0.0326
+confidence|correct           0.5192         0.2558      -0.2634
+confidence|wrong             0.2697         0.1498      -0.1199
+
+Uniform-entropy reference for vocab=33277: 10.413 nats
+
+Wrote full history to results.json
+
+======================================================================
+GENERATION COMPARISON
+======================================================================
+
+==========================================================================
+PROMPT: 'The history of'
+==========================================================================
+
+  Next-token distribution (top 8):
+      baseline (H=5.46 nats)    mistake-only (H=7.47 nats)
+               the  0.371    |               the  0.074
+                 a  0.037    |                 a  0.050
+               his  0.018    |               his  0.022
+             <unk>  0.016    |             <unk>  0.021
+              this  0.011    |              this  0.017
+               The  0.011    |               The  0.015
+                an  0.009    |                an  0.012
+             these  0.007    |               its  0.011
+
+  --- temperature 0.0 ---
+
+  [baseline] >>>The history of<<< the <unk> , the <unk> , and the <unk> of the <unk> , the <unk> , the <unk> , the <unk> , the <unk> , the <unk> , and the <unk> , the <unk> , the <unk> , the <unk> , the <unk> , the <unk> , the <unk> , and the <unk> . The <unk> , the <unk> , the <unk> , and the <unk> , the <unk> , the <unk> , the <unk> , the <unk> , the
+
+  [mistake-only] >>>The history of<<< the <unk> of the <unk> of <unk> , <unk> , <unk> , <unk> , and <unk> , <unk> , <unk> , <unk> , <unk> , and <unk> . The <unk> of <unk> , <unk> , <unk> , <unk> , <unk> , and <unk> <unk> <unk> , <unk> <unk> , <unk> <unk> , <unk> <unk> , <unk> <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> , <unk> ,
+
+  --- temperature 0.7 ---
+
+  [baseline] >>>The history of<<< the Catholic Church of England on July 25 , 1897 , it was found that the Church of England 's church would be too late to exhibit the country . On November 30 , 1968 , the church was dedicated a church , as a Grade II city . The church was originally a Grade II listed building . It was listed as a Grade II listed building listed building – the second @-@ highest designation of Our Lady of
+
+  [mistake-only] >>>The history of<<< many of her ex @-@ husband , Henry Harvey and John , William P. Charles II of Malaysia , the critic for Old Viking and two Roman Catholic , Henry of France and Henry our brother , whose daughter was a pupil of the <unk> and brother <unk> . His death in France was a national Knight premises . He was a middle @-@ class Cup in Harappa and in France . In May <unk> his father in Belgium retired
+
+  --- temperature 1.0 ---
+
+  [baseline] >>>The history of<<< fiction fiction . This book is regarded by The New cave , " matte and <unk> of the State of Croatia " . Reactions to their use by the Continental tradition that it will be inferred to be a significant factor in the state of Zagreb , including what neither a lesser extent extent as national religion was shown . hampering efforts were prohibited during the Second World War , with the following years because the observatory was not included
+
+  [mistake-only] >>>The history of<<< fiction ( 1999 ) " <unk> , specifications depictions and manual terms of events that were destined by State 's traffic officials . = During their efforts by the President of the Army , President refer the Narayana to the Seventeenth Amendment , stating : This indicates <unk> drugs of a podium ; o movement , depicting cooling belongs <unk> behave beyond a violation during an escape concerning a requirement for the following years , and taking in favour .
+
+==========================================================================
+PROMPT: 'In the 19th century ,'
+==========================================================================
+
+  Next-token distribution (top 8):
+      baseline (H=6.18 nats)    mistake-only (H=7.12 nats)
+               the  0.219    |               the  0.061
+                 a  0.041    |                 a  0.041
+                it  0.028    |                it  0.037
+                he  0.023    |                he  0.024
+             <unk>  0.022    |             <unk>  0.019
+              they  0.020    |               and  0.013
+              many  0.018    |             there  0.013
+              some  0.010    |              they  0.013
+
+  --- temperature 0.0 ---
+
+  [baseline] >>>In the 19th century ,<<< the new museum was built in the mid @-@ 19th century , and the museum was rebuilt and rebuilt in the mid @-@ 20th century . The museum was rebuilt and rebuilt in the mid @-@ 20th century , and rebuilt in the mid @-@ 20th century . The museum was rebuilt and rebuilt in the mid @-@ 20th century , and rebuilt in the mid @-@ 20th century . The museum was rebuilt and rebuilt in the mid @-@
+
+  [mistake-only] >>>In the 19th century ,<<< the <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk>
+
+  --- temperature 0.7 ---
+
+  [baseline] >>>In the 19th century ,<<< many of the French vessels were brought into France and the French fleet was brought back to the State of Tellicherry in 1944 . During the engagement , the French fleet was sent to France in January 1945 and the German fleet was assigned to patrol the East Indies and New Guinea ; the combined ships of the steamboats were completed by July 1945 . The fleet was inspired by the Austro @-@ Hungarian Navy and the Austro @-@ Hungarian
+
+  [mistake-only] >>>In the 19th century ,<<< many of the French explorers <unk> and <unk> consider them to build on all existing settlements of the State 's colonies in the West and the West Bank , to fill the city , with eight agricultural industries to the area in much of its country , including the West Company , carrying a period in which more than five minutes were middle . In 1838 , Samuel disrupted the colonial political outposts of some land to warrant ; the
+
+  --- temperature 1.0 ---
+
+  [baseline] >>>In the 19th century ,<<< many of the French vessels were ordered into France . On 9 October 1916 , Admiral <unk> <unk> , under the main French navy , was dispatched by the French Restigouche . The ship was ordered to Saint asking the ship in early 1916 . At 07 : 15 , a French torpedo cruiser seizing from Swedish battleships and <unk> hampering . Her ship remained in port concerning the tribute from the following day , and the pair were assigned
+
+  [mistake-only] >>>In the 19th century ,<<< many of Celtic documents in a prolonged rites . Many intricate Entertainment subordinate gives authority to <unk> Women 's economy to provide civilian and the peoples to the country of Russia that it will be inferred , and is the worst being notable as more Zagreb as it introduced by crisis it ; official records from depicting Civil War <unk> — who by using INS Willoughby and other artefacts over walls . outposts of significant land to agriculture , worship
+
+==========================================================================
+PROMPT: 'The novel was published in'
+==========================================================================
+
+  Next-token distribution (top 8):
+      baseline (H=4.86 nats)    mistake-only (H=5.84 nats)
+               the  0.241    |               the  0.068
+               The  0.067    |           October  0.041
+               May  0.041    |                 a  0.036
+                 a  0.037    |               The  0.026
+           October  0.025    |             <unk>  0.023
+           Germany  0.021    |               his  0.022
+              2009  0.018    |          December  0.016
+         September  0.018    |              2006  0.015
+
+  --- temperature 0.0 ---
+
+  [baseline] >>>The novel was published in<<< the United States on May 8 , 2009 . The novel was released on May 2 , 2009 , and is one of the best @-@ seller of the best @-@ seller novels ever written by <unk> <unk> . The novel follows the General 's death , a historical figure in the novel . The novel follows a historical figure who is portrayed as a <unk> figure in the novel . The General in His Labyrinth is a novel by
+
+  [mistake-only] >>>The novel was published in<<< the United States in the United States in the United States . The novel was released in Japan in Japan , where it was released in Japan . It was released in Japan in Japan and in Japan . It was released in Japan in Japan and North America in Japan , where it peaked at number one in Japan . It was released in Japan and in Japan . It was released in Japan and in Japan on March
+
+  --- temperature 0.7 ---
+
+  [baseline] >>>The novel was published in<<< the United States by <unk> <unk> , and The <unk> , it was found in the <unk> Republic of Ireland . Among those who have published published the song " <unk> <unk> " , with an estimated 6 @.@ 1 million people born in Ireland and the <unk> of Portugal , in the 20th century , before it shown <unk> . The title was given by the United Kingdom by the United States . In the United Kingdom , Irish
+
+  [mistake-only] >>>The novel was published in<<< 2001 , but declined in 2005 , and was published in 2006 , when it became a commercial success under the same title . During World War I , Norman received the title of a popular development title in the United Kingdom , as a result , he published a number of film publication as First of 2003 . He published two volumes in the same year at the Royal Academy of Music . In an interview in 2012 ,
+
+  --- temperature 1.0 ---
+
+  [baseline] >>>The novel was published in<<< October 2000 . = Critical reception = = The Jewish heart , " matte " is a commercial success , and it is always the next point . The newspaper 's production was well received by critics . lauded the German Caribbean Music Awards in Zagreb : <unk> and <unk> , Golden Globe , and Charles <unk> as shown in 2001 . Fellow musicians Ronald Willoughby signed an purpose in Japan . Larry Lewis , the former professor , wrote
+
+  [mistake-only] >>>The novel was published in<<< 2001 , 1999 , in a list that will provide live concerts , with all additional volumes in State America . Among other related groups published from 2000 – 2000 ; The Sunday interview with The Liberator Historic Code How ever presented it as more talented as <unk> than neither a Golden Music official concert , depicting top belongs <unk> — who middle any INS logic and sacred dances . Many of the more significant Observers making covers , with
+
+==========================================================================
+PROMPT: 'Scientists have discovered that'
+==========================================================================
+
+  Next-token distribution (top 8):
+      baseline (H=5.05 nats)    mistake-only (H=6.49 nats)
+               the  0.316    |               the  0.088
+                it  0.063    |                 a  0.056
+                he  0.027    |              they  0.048
+                 a  0.024    |                it  0.037
+              this  0.023    |                if  0.026
+              they  0.019    |              this  0.018
+                of  0.016    |             <unk>  0.016
+               his  0.015    |                he  0.016
+
+  --- temperature 0.0 ---
+
+  [baseline] >>>Scientists have discovered that<<< the city had been destroyed . The city had a population of about 2 @,@ 000 , and about 4 @,@ 000 , of which about 30 @,@ 000 , of which about 30 @,@ 000 , was the city 's largest tourist destination . The city 's population density was about $ 1 @,@ 000 , and about $ <unk> @,@ 000 , the city had been destroyed . The city 's population density was about $ <unk> @,@
+
+  [mistake-only] >>>Scientists have discovered that<<< the <unk> was a <unk> of <unk> . The <unk> <unk> was also used in the <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> . The <unk> <unk> was used in the <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> <unk> . <unk> <unk> <unk> <unk> <unk> <unk> was used in <unk> <unk> <unk> <unk> <unk> <unk> , <unk> <unk> <unk> <unk> <unk> <unk> , <unk> <unk> <unk> <unk> , <unk> <unk>
+
+  --- temperature 0.7 ---
+
+  [baseline] >>>Scientists have discovered that<<< the situation was not " <unk> " . The same year , the group was transferred to the State Department of Agriculture in March 1968 , and the decision to fill the new airline with an extension to Stavanger . This was rejected as a new airline operator . The airline also had a concession to SAS , and <unk> hampering Braathens SAFE stated that it would be a possible agreement for the concession because SAS would be granted concession
+
+  [mistake-only] >>>Scientists have discovered that<<< many of their principal wives may have spread to them , according to his first wife of Hannah . = = <unk> = = During the Roman Empire , many of whom were architects . The names of a town in Puebla , he writes that " the great great crisis of the Jewish community in <unk> , and <unk> — who died in the ruins that had a Christian Protestant tradition . He concluded his view in which "
+
+  --- temperature 1.0 ---
+
+  [baseline] >>>Scientists have discovered that<<< many of the principal ingredients on Skye . The same same manuscript was found in <unk> of Women 's ranges to it throughout Daydream since published on the 1930s . Similarly , it is believed that it was a significant factor in much of his stories as early as 1859 , and there is no Christian style as shown in England . Some critics still believe that there inspired the versions of the poetry of the names in tradition .
+
+  [mistake-only] >>>Scientists have discovered that<<< many of their principal engender <unk> , two clans discovered within it served during the <unk> of the State ranges to complete Nubia and appear more on these changes of high @-@ effect , with Chagas development . Surrounding the <unk> Again of each large and others aged drugs of death in World o 's national stage was shown <unk> hampering . Anyone using INS logic points Harappa inspired by walls of the size of an egg in which logic
+
+Wrote log to mistake_only_wikitext.txt
