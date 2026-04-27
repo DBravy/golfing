@@ -1,0 +1,195 @@
+"""
+Small Transformer LM using UnifiedHybridAttention.
+
+A minimal but complete transformer wrapper: token + position-free embedding
+(positions come from RoPE inside attention), N transformer blocks, final norm,
+LM head tied to the input embedding.
+
+Designed to be small enough to train on a single T4 in a few hours.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from dynamic_csa_unified import (
+    UnifiedAttentionConfig,
+    UnifiedHybridAttention,
+    RMSNorm,
+    count_attention_params,
+)
+
+
+@dataclass
+class ModelConfig:
+    vocab_size: int = 50257
+    d_model: int = 256
+    n_layers: int = 4
+    ffn_mult: int = 4                # FFN hidden = d_model * ffn_mult
+    tie_embeddings: bool = True
+
+    # Attention sub-config
+    n_query_heads: int = 4
+    head_dim: int = 64
+    query_compress_dim: int = 128
+    n_indexer_heads: int = 2
+    indexer_head_dim: int = 32
+    top_k: int = 16
+    n_csa: int = 256
+    max_phrase_len: int = 16
+    n_win: int = 64
+    use_attn_sink: bool = True
+
+    dropout: float = 0.0
+
+    def to_attn_config(self) -> UnifiedAttentionConfig:
+        return UnifiedAttentionConfig(
+            d_model=self.d_model,
+            n_query_heads=self.n_query_heads,
+            head_dim=self.head_dim,
+            query_compress_dim=self.query_compress_dim,
+            n_indexer_heads=self.n_indexer_heads,
+            indexer_head_dim=self.indexer_head_dim,
+            top_k=self.top_k,
+            n_csa=self.n_csa,
+            max_phrase_len=self.max_phrase_len,
+            n_win=self.n_win,
+            use_attn_sink=self.use_attn_sink,
+            dropout=self.dropout,
+        )
+
+
+class FeedForward(nn.Module):
+    """Simple GELU MLP. Swap for SwiGLU later if desired."""
+    def __init__(self, d_model: int, ffn_mult: int, dropout: float = 0.0):
+        super().__init__()
+        hidden = d_model * ffn_mult
+        self.fc1 = nn.Linear(d_model, hidden, bias=False)
+        self.fc2 = nn.Linear(hidden, d_model, bias=False)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.dropout(self.fc2(F.gelu(self.fc1(x))))
+
+
+class TransformerBlock(nn.Module):
+    """Pre-norm: x + Attn(norm(x)); x + FFN(norm(x))."""
+    def __init__(self, cfg: ModelConfig):
+        super().__init__()
+        self.norm1 = RMSNorm(cfg.d_model)
+        self.attn = UnifiedHybridAttention(cfg.to_attn_config())
+        self.norm2 = RMSNorm(cfg.d_model)
+        self.ffn = FeedForward(cfg.d_model, cfg.ffn_mult, cfg.dropout)
+        self.dropout = nn.Dropout(cfg.dropout)
+
+    def forward(self, x, phrase_mask, phrase_token_idx, phrase_end_pos):
+        a = self.attn(self.norm1(x), phrase_mask, phrase_token_idx, phrase_end_pos)
+        x = x + self.dropout(a)
+        x = x + self.dropout(self.ffn(self.norm2(x)))
+        return x
+
+
+class HybridTransformerLM(nn.Module):
+    def __init__(self, cfg: ModelConfig):
+        super().__init__()
+        self.cfg = cfg
+        self.embed = nn.Embedding(cfg.vocab_size, cfg.d_model)
+        self.blocks = nn.ModuleList(
+            [TransformerBlock(cfg) for _ in range(cfg.n_layers)]
+        )
+        self.final_norm = RMSNorm(cfg.d_model)
+        if cfg.tie_embeddings:
+            self.lm_head = None  # use self.embed.weight in forward
+        else:
+            self.lm_head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
+
+        # Standard transformer init: small std on embed and projections.
+        nn.init.normal_(self.embed.weight, mean=0.0, std=0.02)
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0.0, std=0.02)
+
+    def forward(self,
+                input_ids: torch.Tensor,
+                phrase_mask: torch.Tensor,
+                phrase_token_idx: torch.Tensor,
+                phrase_end_pos: torch.Tensor,
+                labels: Optional[torch.Tensor] = None):
+        """
+        input_ids:        (B, T)
+        phrase_mask:      (B, P, Lmax) bool
+        phrase_token_idx: (B, P, Lmax) long
+        phrase_end_pos:   (B, P) long; -1 for padding phrases
+        labels:           (B, T) optional; if provided, returns (logits, loss)
+
+        Returns:
+            logits: (B, T, vocab_size)
+            loss:   scalar if labels given, else None
+        """
+        x = self.embed(input_ids)
+        for block in self.blocks:
+            x = block(x, phrase_mask, phrase_token_idx, phrase_end_pos)
+        x = self.final_norm(x)
+
+        if self.lm_head is None:
+            logits = F.linear(x, self.embed.weight)
+        else:
+            logits = self.lm_head(x)
+
+        loss = None
+        if labels is not None:
+            # Standard next-token prediction: shift by 1.
+            shift_logits = logits[:, :-1, :].contiguous()
+            shift_labels = labels[:, 1:].contiguous()
+            loss = F.cross_entropy(
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1),
+                ignore_index=-100,
+            )
+        return logits, loss
+
+    def num_parameters(self, exclude_embeddings: bool = True) -> int:
+        n = sum(p.numel() for p in self.parameters())
+        if exclude_embeddings:
+            n -= self.embed.weight.numel()
+            if self.lm_head is not None:
+                n -= self.lm_head.weight.numel()
+        return n
+
+
+# -------------------------------------------------------------------------
+# Smoke test
+# -------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    from dynamic_csa_unified import pack_phrases
+
+    cfg = ModelConfig(
+        vocab_size=1024, d_model=128, n_layers=2,
+        n_query_heads=4, head_dim=32, query_compress_dim=64,
+        n_indexer_heads=2, indexer_head_dim=32,
+        top_k=8, n_csa=64, max_phrase_len=8, n_win=16,
+    )
+    model = HybridTransformerLM(cfg)
+    print(f"non-embedding params: {model.num_parameters(True):,}")
+    print(f"total params:         {model.num_parameters(False):,}")
+    print(f"attention params per layer:")
+    for k, v in count_attention_params(cfg.to_attn_config()).items():
+        if k == "TOTAL":
+            print(f"  {k:<28s} {v:>10,d}")
+
+    B, T = 2, 64
+    input_ids = torch.randint(0, cfg.vocab_size, (B, T))
+    spans = [[(s, min(s + 4, T)) for s in range(0, T, 4)] for _ in range(B)]
+    pm, pti, pep = pack_phrases(spans, T, cfg.max_phrase_len, input_ids.device)
+
+    logits, loss = model(input_ids, pm, pti, pep, labels=input_ids)
+    print(f"\nlogits shape: {tuple(logits.shape)}")
+    print(f"loss:         {loss.item():.4f}")
+    loss.backward()
+    print("backward pass ok")

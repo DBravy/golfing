@@ -1,377 +1,348 @@
 """
-Train and compare vanilla TTT-E2E against a standard transformer.
+Training loop for HybridTransformerLM on TinyStories with cached phrase spans.
 
-Both models share the same architecture (same n_layers, d_model, ff_mult)
-and therefore the same total parameter count. The only difference is
-whether the inner-loop TTT mechanism is active:
-    --mode standard   : n_ttt_blocks=0, plain transformer
-    --mode ttt        : n_ttt_blocks>0 with TTT inner loop
-    --mode persistent : 
-    --mode both       : run both back-to-back and plot the comparison
+Designed for a single T4 (16 GB). Uses fp16 AMP because T4 has no bf16.
 
-Example:
-    python train.py                         # both modes, default config
-    python train.py --max_steps 200         # shorter run
-    python train.py --inner_lr 3.0          # sweep inner-loop lr
-    python train.py --mode ttt --seq_len 512 --window_size 128
-    python train.py --mode persistent --seq_len 256 --mini_batch_size 128
+Usage (after prepare_data.py has run):
+    python train.py --steps 5000 --batch-size 8 --max-len 384 --lr 3e-4
 
+The script logs to stdout and optionally to a JSONL file. Checkpoints land in
+./checkpoints/.
 """
 
-import os
-import sys
-import time
-import json
+from __future__ import annotations
+
 import argparse
+import json
+import math
+import time
 from pathlib import Path
 
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
-from ttt_model import (
-    TTTTransformer,
-    ttt_forward_and_loss,
-    standard_forward_and_loss,
-    persistent_ttt_forward_and_loss,
-    persistent_eval_loss,
-    snapshot_fast_params,
-    get_non_fast_parameters,
-)
+from model import ModelConfig, HybridTransformerLM
+from dynamic_csa_unified import pack_phrases
 
 
-def get_device():
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
+# -------------------------------------------------------------------------
+# Dataset and collator
+# -------------------------------------------------------------------------
 
-
-def set_seed(seed):
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-
-
-def load_tinystories(cache_dir="./data", max_chars=2_000_000):
-    """
-    Try HuggingFace datasets first; fall back to a synthetic repetitive text
-    if datasets is unavailable or offline. Cached locally after first load.
-    """
-    cache_dir = Path(cache_dir)
-    cache_dir.mkdir(exist_ok=True, parents=True)
-    cache_file = cache_dir / "tinystories_subset.txt"
-    if cache_file.exists():
-        return cache_file.read_text(encoding="utf-8")
-    try:
-        from datasets import load_dataset
-        print("Downloading TinyStories (validation split)...")
-        ds = load_dataset("roneneldan/TinyStories", split="validation")
-        text = "\n\n".join(ds["text"])[:max_chars]
-        cache_file.write_text(text, encoding="utf-8")
-        return text
-    except Exception as e:
-        print(f"Could not download TinyStories ({e}). Using fallback sample text.")
-        fallback = (
-            "Once upon a time, there was a little girl named Lily. She lived in a "
-            "small house with her mom and dad. One day, Lily found a small dog in "
-            "the garden. The dog was very friendly and licked Lily's hand. Lily "
-            "hugged the dog and took it home.\n\nHer mom and dad were happy to see "
-            "the dog. They gave the dog food and water. The dog ate the food and "
-            "drank the water. Then, the dog went to sleep on a soft blanket.\n\n"
-            "The next day, Lily and the dog played in the garden. They ran around "
-            "and had fun. Lily gave the dog a name. She called it Max. Max was "
-            "happy with his new name. Lily and Max became best friends.\n\n"
-        )
-        text = fallback * 2000
-        return text[:max_chars]
-
-
-class CharTokenizer:
-    def __init__(self, text):
-        chars = sorted(set(text))
-        self.chars = chars
-        self.stoi = {c: i for i, c in enumerate(chars)}
-        self.itos = {i: c for i, c in enumerate(chars)}
-        self.vocab_size = len(chars)
-
-    def encode(self, text):
-        return torch.tensor(
-            [self.stoi[c] for c in text if c in self.stoi], dtype=torch.long
-        )
-
-
-class SeqDataset(Dataset):
-    def __init__(self, tokens, seq_len):
-        self.tokens = tokens
-        self.seq_len = seq_len
-        self.n = (len(tokens) - 1) // seq_len
+class PreChunkedDataset(Dataset):
+    """Loads the dict produced by prepare_data.py."""
+    def __init__(self, path: str):
+        blob = torch.load(path, weights_only=False)
+        self.input_ids = blob["input_ids"]
+        self.phrase_spans = blob["phrase_spans"]
+        self.max_phrase_len = blob["max_phrase_len"]
+        self.tokenizer_name = blob["tokenizer_name"]
 
     def __len__(self):
-        return self.n
+        return len(self.input_ids)
 
     def __getitem__(self, idx):
-        start = idx * self.seq_len
-        return self.tokens[start:start + self.seq_len]
+        return {
+            "input_ids": self.input_ids[idx],
+            "phrase_spans": self.phrase_spans[idx],
+        }
 
 
-def run_one(mode, config, tokenizer, train_tokens, eval_tokens, device):
-    set_seed(config["seed"])
+class Collator:
+    """
+    Pads input_ids to the batch max (clipped at max_len), builds the packed
+    phrase tensors, and clips spans that fall past the batch's effective T.
+    """
+    def __init__(self, pad_token_id: int, max_len: int, max_phrase_len: int):
+        self.pad_token_id = pad_token_id
+        self.max_len = max_len
+        self.max_phrase_len = max_phrase_len
 
-    n_ttt_blocks = config["n_ttt_blocks"] if mode in ("ttt", "persistent") else 0
-    model = TTTTransformer(
-        vocab_size=tokenizer.vocab_size,
-        d_model=config["d_model"],
-        n_layers=config["n_layers"],
-        n_heads=config["n_heads"],
-        ff_mult=config["ff_mult"],
-        max_seq_len=config["seq_len"] + 16,
-        window_size=config["window_size"],
-        n_ttt_blocks=n_ttt_blocks,
-    ).to(device)
+    def __call__(self, batch):
+        # Determine T for this batch.
+        T = min(self.max_len, max(len(b["input_ids"]) for b in batch))
 
-    n_params = model.num_params()
-    print(f"[{mode}] {n_params:,} parameters")
+        B = len(batch)
+        input_ids = torch.full((B, T), self.pad_token_id, dtype=torch.long)
+        labels = torch.full((B, T), -100, dtype=torch.long)
+        spans_per_seq = []
 
-    # For persistent mode, fast params are updated by the inner loop only; exclude
-    # them from the outer optimizer so AdamW's weight decay and momentum do not
-    # fight the inner SGD.
-    if mode == "persistent":
-        opt_params = get_non_fast_parameters(model)
-        print(f"[{mode}] optimizer sees {sum(p.numel() for p in opt_params):,} of "
-              f"{n_params:,} params (fast MLPs excluded)")
-    else:
-        opt_params = list(model.parameters())
+        for i, b in enumerate(batch):
+            ids = b["input_ids"][:T]
+            L = ids.numel()
+            input_ids[i, :L] = ids
+            labels[i, :L] = ids
+            # Clip and filter spans to fit in T.
+            clipped = []
+            for s, e in b["phrase_spans"]:
+                if s >= T:
+                    break
+                e = min(e, T)
+                if e > s:
+                    clipped.append((s, e))
+            if not clipped:
+                # Ensure pack_phrases gets at least one valid span, even if
+                # the whole sequence is empty (degenerate case).
+                clipped = [(0, min(1, L))] if L > 0 else [(0, 0)]
+            spans_per_seq.append(clipped)
 
-    optim = torch.optim.AdamW(
-        opt_params,
-        lr=config["lr"],
-        betas=(0.9, 0.95),
-        weight_decay=0.01,
-    )
+        phrase_mask, phrase_token_idx, phrase_end_pos = pack_phrases(
+            spans_per_seq, T, self.max_phrase_len, device=torch.device("cpu")
+        )
 
-    # Persistent fast params state, if applicable. A separate inner_lr is used
-    # because per-step magnitudes differ from bi-level TTT (these updates
-    # accumulate rather than get thrown away).
-    persistent_state = None
-    if mode == "persistent":
-        persistent_state = snapshot_fast_params(model.get_initial_fast_params())
+        return {
+            "input_ids": input_ids,
+            "labels": labels,
+            "phrase_mask": phrase_mask,
+            "phrase_token_idx": phrase_token_idx,
+            "phrase_end_pos": phrase_end_pos,
+        }
 
-    train_ds = SeqDataset(train_tokens, config["seq_len"])
-    eval_ds = SeqDataset(eval_tokens, config["seq_len"])
-    train_loader = DataLoader(train_ds, batch_size=1, shuffle=True, drop_last=True)
 
-    def eval_model(max_batches=16):
-        nonlocal persistent_state
-        model.eval()
-        losses = []
-        eval_loader = DataLoader(eval_ds, batch_size=1, shuffle=False)
-        # For persistent mode: snapshot pre-eval state so eval adaptation does
-        # not leak into training. Each eval sequence also starts from this
-        # snapshot (per-sequence reset, matching TTT eval).
-        pre_eval_snapshot = None
-        if mode == "persistent":
-            pre_eval_snapshot = snapshot_fast_params(persistent_state)
-        for j, batch in enumerate(eval_loader):
-            if j >= max_batches:
-                break
-            batch = batch.to(device)
-            if mode == "ttt":
-                loss = ttt_forward_and_loss(
-                    model, batch,
-                    config["mini_batch_size"], config["inner_lr"],
-                    create_graph=False,
-                )
-                losses.append(float(loss.detach()))
-            elif mode == "persistent":
-                el = persistent_eval_loss(
-                    model, batch,
-                    config["mini_batch_size"],
-                    config.get("persistent_inner_lr", config["inner_lr"]),
-                    pre_eval_snapshot,
-                )
-                losses.append(el)
-            else:
-                with torch.no_grad():
-                    loss = standard_forward_and_loss(model, batch)
-                losses.append(float(loss.detach()))
-        model.train()
-        # Restore persistent state to its pre-eval snapshot (we never mutated
-        # persistent_state during eval, since persistent_eval_loss snapshots
-        # internally, but we re-snapshot to be explicit).
-        if mode == "persistent":
-            persistent_state = pre_eval_snapshot
-        return sum(losses) / len(losses)
+# -------------------------------------------------------------------------
+# LR schedule
+# -------------------------------------------------------------------------
 
+def get_lr(step: int, total_steps: int, base_lr: float, warmup: int,
+           min_lr: float = 1e-5) -> float:
+    if step < warmup:
+        return base_lr * (step + 1) / warmup
+    progress = (step - warmup) / max(1, total_steps - warmup)
+    return min_lr + 0.5 * (base_lr - min_lr) * (1 + math.cos(math.pi * progress))
+
+
+# -------------------------------------------------------------------------
+# Eval loop
+# -------------------------------------------------------------------------
+
+@torch.no_grad()
+def evaluate(model, loader, device, max_batches: int = 50):
+    model.eval()
+    total_loss = 0.0
+    total_tokens = 0
+    for i, batch in enumerate(loader):
+        if i >= max_batches:
+            break
+        batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
+        with torch.cuda.amp.autocast(dtype=torch.float16):
+            _, loss = model(
+                batch["input_ids"],
+                batch["phrase_mask"],
+                batch["phrase_token_idx"],
+                batch["phrase_end_pos"],
+                labels=batch["labels"],
+            )
+        n = (batch["labels"] != -100).sum().item()
+        total_loss += loss.item() * n
+        total_tokens += n
     model.train()
-    t0 = time.time()
-    log = []
-    running = []
-    step = 0
-    iter_loader = iter(train_loader)
-
-    # Baseline eval at step 0
-    log.append({"step": 0, "eval_loss": eval_model(), "elapsed": 0.0})
-    print(f"[{mode}] step     0 EVAL {log[0]['eval_loss']:.4f}")
-
-    while step < config["max_steps"]:
-        optim.zero_grad()
-        accum = 0.0
-        for _ in range(config["accum_steps"]):
-            try:
-                batch = next(iter_loader)
-            except StopIteration:
-                iter_loader = iter(train_loader)
-                batch = next(iter_loader)
-            batch = batch.to(device)
-            if mode == "ttt":
-                loss = ttt_forward_and_loss(
-                    model, batch,
-                    config["mini_batch_size"], config["inner_lr"],
-                    create_graph=True,
-                )
-            elif mode == "persistent":
-                loss, persistent_state = persistent_ttt_forward_and_loss(
-                    model, batch,
-                    config["mini_batch_size"],
-                    config.get("persistent_inner_lr", config["inner_lr"]),
-                    persistent_state,
-                    inner_weight_decay=config.get("persistent_inner_wd", 0.0),
-                )
-            else:
-                loss = standard_forward_and_loss(model, batch)
-            (loss / config["accum_steps"]).backward()
-            accum += float(loss.detach()) / config["accum_steps"]
-        torch.nn.utils.clip_grad_norm_(opt_params, 1.0)
-        optim.step()
-        step += 1
-        running.append(accum)
-
-        if step % config["log_interval"] == 0:
-            avg = sum(running) / len(running)
-            elapsed = time.time() - t0
-            extra = ""
-            if mode == "persistent":
-                norm = sum(p.norm().item() for fp in persistent_state for p in fp.values())
-                extra = f" fast_norm {norm:.2f}"
-            print(f"[{mode}] step {step:5d} train {avg:.4f} elapsed {elapsed:.1f}s{extra}")
-            running = []
-
-        if step % config["eval_interval"] == 0 or step == config["max_steps"]:
-            el = eval_model()
-            elapsed = time.time() - t0
-            log.append({"step": step, "eval_loss": el, "elapsed": elapsed})
-            print(f"[{mode}] step {step:5d} EVAL  {el:.4f} elapsed {elapsed:.1f}s")
-
-    return {"params": n_params, "log": log}
+    return total_loss / max(1, total_tokens)
 
 
-def make_plot(results, modes, out_path):
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except Exception as e:
-        print(f"(Plotting skipped: {e})")
-        return
-
-    fig, ax = plt.subplots(1, 2, figsize=(11, 4))
-    colors = {"standard": "tab:orange", "ttt": "tab:blue", "persistent": "tab:green"}
-    for mode in modes:
-        log = results[mode]["log"]
-        steps = [e["step"] for e in log]
-        losses = [e["eval_loss"] for e in log]
-        times = [e["elapsed"] for e in log]
-        c = colors.get(mode, None)
-        ax[0].plot(steps, losses, marker="o", label=mode, color=c)
-        ax[1].plot(times, losses, marker="o", label=mode, color=c)
-    ax[0].set_xlabel("outer step")
-    ax[0].set_ylabel("eval NLL (per token)")
-    ax[0].set_title("Loss vs step")
-    ax[0].legend()
-    ax[0].grid(alpha=0.3)
-    ax[1].set_xlabel("wall-clock (s)")
-    ax[1].set_ylabel("eval NLL (per token)")
-    ax[1].set_title("Loss vs time")
-    ax[1].legend()
-    ax[1].grid(alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=120)
-    print(f"Saved plot -> {out_path}")
-
+# -------------------------------------------------------------------------
+# Main
+# -------------------------------------------------------------------------
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mode", choices=["standard", "ttt", "persistent", "all"], default="all")
-    ap.add_argument("--max_steps", type=int, default=300)
-    ap.add_argument("--seq_len", type=int, default=256)
-    ap.add_argument("--mini_batch_size", type=int, default=32)
-    ap.add_argument("--window_size", type=int, default=256)
-    ap.add_argument("--d_model", type=int, default=128)
-    ap.add_argument("--n_layers", type=int, default=8)
-    ap.add_argument("--n_heads", type=int, default=4)
-    ap.add_argument("--ff_mult", type=int, default=4)
-    ap.add_argument("--n_ttt_blocks", type=int, default=2)
+    ap.add_argument("--data-dir", default="./data")
+    ap.add_argument("--ckpt-dir", default="./checkpoints")
+    ap.add_argument("--log-file", default=None)
+    ap.add_argument("--steps", type=int, default=5000)
+    ap.add_argument("--batch-size", type=int, default=8)
+    ap.add_argument("--accum-steps", type=int, default=1)
+    ap.add_argument("--max-len", type=int, default=384)
     ap.add_argument("--lr", type=float, default=3e-4)
-    ap.add_argument("--inner_lr", type=float, default=1.0,
-                    help="Inner-loop SGD lr for TTT (bi-level) mode.")
-    ap.add_argument("--persistent_inner_lr", type=float, default=0.1,
-                    help="Inner-loop SGD lr for persistent mode. Smaller because "
-                         "updates accumulate across sequences rather than being reset.")
-    ap.add_argument("--persistent_inner_wd", type=float, default=0.0,
-                    help="Optional weight decay for the persistent fast params' "
-                         "inner SGD update. 0 = off.")
-    ap.add_argument("--accum_steps", type=int, default=8)
+    ap.add_argument("--warmup", type=int, default=200)
+    ap.add_argument("--weight-decay", type=float, default=0.1)
+    ap.add_argument("--grad-clip", type=float, default=1.0)
+    ap.add_argument("--eval-every", type=int, default=500)
+    ap.add_argument("--ckpt-every", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--log_interval", type=int, default=25)
-    ap.add_argument("--eval_interval", type=int, default=50)
-    ap.add_argument("--out", type=str, default="results.json")
-    ap.add_argument("--max_chars", type=int, default=2_000_000)
+    ap.add_argument("--num-workers", type=int, default=2)
+    ap.add_argument("--config-overrides", type=str, default=None,
+                    help="JSON dict of ModelConfig fields to override.")
     args = ap.parse_args()
 
-    device = get_device()
+    torch.manual_seed(args.seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
+    if device.type == "cuda":
+        print(f"GPU:    {torch.cuda.get_device_name(0)}")
 
-    text = load_tinystories(max_chars=args.max_chars)
-    print(f"Loaded {len(text):,} chars")
+    # Load datasets.
+    train_path = Path(args.data_dir) / "train.pt"
+    val_path = Path(args.data_dir) / "validation.pt"
+    print(f"Loading {train_path}")
+    train_ds = PreChunkedDataset(str(train_path))
+    print(f"Loading {val_path}")
+    val_ds = PreChunkedDataset(str(val_path))
+    print(f"  train: {len(train_ds):,}  val: {len(val_ds):,}")
 
-    tok = CharTokenizer(text)
-    print(f"Vocab: {tok.vocab_size}")
+    # Get vocab size and pad token from the tokenizer used for prep.
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(train_ds.tokenizer_name)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    pad_id = tokenizer.pad_token_id
 
-    all_tokens = tok.encode(text)
-    n_eval = min(len(all_tokens) // 20, 50_000)
-    train_tokens = all_tokens[:-n_eval]
-    eval_tokens = all_tokens[-n_eval:]
-    print(f"Tokens: train {len(train_tokens):,}, eval {len(eval_tokens):,}")
+    # Build model config.
+    model_cfg = ModelConfig(
+        vocab_size=tokenizer.vocab_size,
+        max_phrase_len=train_ds.max_phrase_len,
+    )
+    if args.config_overrides:
+        overrides = json.loads(args.config_overrides)
+        for k, v in overrides.items():
+            setattr(model_cfg, k, v)
 
-    config = vars(args)
-    results = {"config": config}
+    print(f"\nModel config: {model_cfg}")
 
-    if args.mode == "all":
-        modes = ["standard", "ttt", "persistent"]
-    else:
-        modes = [args.mode]
+    model = HybridTransformerLM(model_cfg).to(device)
+    n_params = model.num_parameters(exclude_embeddings=True)
+    n_total = model.num_parameters(exclude_embeddings=False)
+    print(f"Non-embedding params: {n_params:,}")
+    print(f"Total params:         {n_total:,}")
 
-    for mode in modes:
-        print(f"\n=== Training: {mode} ===")
-        results[mode] = run_one(mode, config, tok, train_tokens, eval_tokens, device)
+    # Collator and loaders.
+    collator = Collator(pad_id, args.max_len, model_cfg.max_phrase_len)
+    train_loader = DataLoader(
+        train_ds, batch_size=args.batch_size, shuffle=True,
+        collate_fn=collator, num_workers=args.num_workers, drop_last=True,
+        pin_memory=(device.type == "cuda"),
+    )
+    val_loader = DataLoader(
+        val_ds, batch_size=args.batch_size, shuffle=False,
+        collate_fn=collator, num_workers=args.num_workers,
+        pin_memory=(device.type == "cuda"),
+    )
 
-    with open(args.out, "w") as f:
-        json.dump(results, f, indent=2)
-    print(f"\nSaved results -> {args.out}")
+    # Optimizer.
+    no_decay = {"bias", "B_pos", "sink_logits"}
+    decay_params = [p for n, p in model.named_parameters()
+                    if p.requires_grad and not any(k in n for k in no_decay)
+                    and "norm" not in n.lower()]
+    nodecay_params = [p for n, p in model.named_parameters()
+                      if p.requires_grad and (any(k in n for k in no_decay)
+                                              or "norm" in n.lower())]
+    optim = torch.optim.AdamW(
+        [{"params": decay_params, "weight_decay": args.weight_decay},
+         {"params": nodecay_params, "weight_decay": 0.0}],
+        lr=args.lr, betas=(0.9, 0.95),
+    )
+    scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
 
-    plot_path = Path(args.out).with_suffix(".png")
-    make_plot(results, modes, plot_path)
+    # Logging setup.
+    log_fp = open(args.log_file, "w") if args.log_file else None
+    def log(record: dict):
+        line = json.dumps(record)
+        print(line)
+        if log_fp:
+            log_fp.write(line + "\n")
+            log_fp.flush()
 
-    print("\n=== Summary ===")
-    for mode in modes:
-        log = results[mode]["log"]
-        final = log[-1]
-        start = log[0]["eval_loss"]
-        print(
-            f"[{mode:11s}] eval NLL: {start:.4f} -> {final['eval_loss']:.4f}  "
-            f"({final['step']} steps, {final['elapsed']:.1f}s)"
-        )
+    Path(args.ckpt_dir).mkdir(parents=True, exist_ok=True)
+
+    # Training loop.
+    model.train()
+    step = 0
+    train_iter = iter(train_loader)
+    t_last = time.time()
+    loss_accum = 0.0
+
+    print(f"\nStarting training for {args.steps} steps "
+          f"(effective batch = {args.batch_size * args.accum_steps})")
+
+    while step < args.steps:
+        optim.zero_grad(set_to_none=True)
+        accum_loss = 0.0
+
+        for _ in range(args.accum_steps):
+            try:
+                batch = next(train_iter)
+            except StopIteration:
+                train_iter = iter(train_loader)
+                batch = next(train_iter)
+
+            batch = {k: v.to(device, non_blocking=True) for k, v in batch.items()}
+
+            with torch.cuda.amp.autocast(dtype=torch.float16):
+                _, loss = model(
+                    batch["input_ids"],
+                    batch["phrase_mask"],
+                    batch["phrase_token_idx"],
+                    batch["phrase_end_pos"],
+                    labels=batch["labels"],
+                )
+                loss = loss / args.accum_steps
+
+            if not torch.isfinite(loss):
+                log({"step": step, "event": "non_finite_loss",
+                     "loss": float(loss.item())})
+                optim.zero_grad(set_to_none=True)
+                break
+
+            scaler.scale(loss).backward()
+            accum_loss += loss.item()
+
+        if not torch.isfinite(torch.tensor(accum_loss)):
+            step += 1
+            continue
+
+        # LR step.
+        lr = get_lr(step, args.steps, args.lr, args.warmup)
+        for pg in optim.param_groups:
+            pg["lr"] = lr
+
+        # Grad clip + step.
+        scaler.unscale_(optim)
+        gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+        scaler.step(optim)
+        scaler.update()
+
+        loss_accum += accum_loss
+        step += 1
+
+        # Periodic logging.
+        if step % 20 == 0:
+            now = time.time()
+            avg_loss = loss_accum / 20
+            tps = (args.batch_size * args.accum_steps * args.max_len * 20) / (now - t_last)
+            log({
+                "step": step, "loss": round(avg_loss, 4),
+                "lr": round(lr, 6), "grad_norm": round(float(gnorm), 3),
+                "tokens_per_sec": int(tps),
+            })
+            loss_accum = 0.0
+            t_last = now
+
+        # Eval.
+        if step % args.eval_every == 0:
+            val_loss = evaluate(model, val_loader, device)
+            log({"step": step, "event": "eval",
+                 "val_loss": round(val_loss, 4),
+                 "val_ppl": round(math.exp(val_loss), 2)})
+
+        # Checkpoint.
+        if step % args.ckpt_every == 0:
+            ckpt_path = Path(args.ckpt_dir) / f"step_{step}.pt"
+            torch.save({
+                "step": step,
+                "model": model.state_dict(),
+                "optim": optim.state_dict(),
+                "config": vars(model_cfg),
+            }, ckpt_path)
+            log({"step": step, "event": "checkpoint", "path": str(ckpt_path)})
+
+    # Final eval.
+    val_loss = evaluate(model, val_loader, device, max_batches=200)
+    log({"step": step, "event": "final_eval",
+         "val_loss": round(val_loss, 4),
+         "val_ppl": round(math.exp(val_loss), 2)})
+
+    if log_fp:
+        log_fp.close()
 
 
 if __name__ == "__main__":
