@@ -9,28 +9,31 @@ Format (matches modded-nanogpt / nanogpt-speedrun):
     [3:]: zeros (reserved)
   Body: num_tokens uint16 little-endian token IDs.
 
-Documents are tokenized and joined by EOS. The vocabulary must fit in uint16
-(<= 65535 tokens), which is satisfied by GPT-2 (50257) and most BPE tokenizers.
+The --tokenizer flag accepts:
+  - A Hugging Face tokenizer name (e.g. "gpt2"), or
+  - A path to a SentencePiece .model file.
+
+Vocabulary must fit in uint16 (<= 65535 tokens).
 
 Usage:
+    # GPT-2 BPE
     python prepare_shards.py --dataset roneneldan/TinyStories --split train \\
-        --tokenizer gpt2 --out-dir ./data/datasets/tinystories_gpt2 \\
-        --tokens-per-shard 10000000
-
-    python prepare_shards.py --dataset roneneldan/TinyStories --split validation \\
         --tokenizer gpt2 --out-dir ./data/datasets/tinystories_gpt2
 
-Output filenames: {prefix}_{split}_NNNNNN.bin (zero-padded shard index).
+    # Custom SentencePiece BPE
+    python prepare_shards.py --dataset roneneldan/TinyStories --split train \\
+        --tokenizer ./data/tokenizers/tinystories_8192_bpe.model \\
+        --out-dir ./data/datasets/tinystories_sp8192
 """
 
 from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Tuple, Callable, List
 
 import numpy as np
 from datasets import load_dataset
-from transformers import AutoTokenizer
 from tqdm import tqdm
 
 
@@ -39,7 +42,6 @@ SHARD_VERSION = 1
 
 
 def write_shard(path: Path, tokens: np.ndarray) -> None:
-    """Write a single shard file. tokens must be representable as uint16."""
     if tokens.dtype != np.uint16:
         if tokens.max() > 65535 or tokens.min() < 0:
             raise ValueError(f"Token ids out of uint16 range in {path}")
@@ -53,19 +55,51 @@ def write_shard(path: Path, tokens: np.ndarray) -> None:
         f.write(tokens.astype("<u2").tobytes())
 
 
+def load_tokenizer(spec: str) -> Tuple[Callable[[List[str]], List[List[int]]],
+                                       int, int]:
+    """
+    Returns (encode_batch, vocab_size, eos_id).
+
+    encode_batch: function from a list of strings to a list of token-id lists.
+    """
+    if spec.endswith(".model"):
+        try:
+            import sentencepiece as spm
+        except ImportError as e:
+            raise SystemExit(
+                "sentencepiece is not installed. Run: pip install sentencepiece"
+            ) from e
+        sp = spm.SentencePieceProcessor(model_file=spec)
+        vocab_size = int(sp.vocab_size())
+        eos_id = int(sp.eos_id())
+        if eos_id < 0:
+            raise ValueError(f"SentencePiece model {spec} has no EOS token.")
+        # SP encode supports a list directly.
+        def encode_batch(texts):
+            return sp.encode(texts, out_type=int)
+        return encode_batch, vocab_size, eos_id
+    else:
+        from transformers import AutoTokenizer
+        tok = AutoTokenizer.from_pretrained(spec)
+        vocab_size = int(tok.vocab_size)
+        eos_id = tok.eos_token_id
+        if eos_id is None:
+            raise ValueError(f"Tokenizer {spec} has no EOS token.")
+        def encode_batch(texts):
+            return tok(texts, add_special_tokens=False)["input_ids"]
+        return encode_batch, vocab_size, int(eos_id)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", default="roneneldan/TinyStories",
-                    help="Hugging Face dataset name.")
+    ap.add_argument("--dataset", default="roneneldan/TinyStories")
     ap.add_argument("--split", default="train", choices=["train", "validation"])
     ap.add_argument("--tokenizer", default="gpt2",
-                    help="HF tokenizer name. Vocab size must be <= 65535.")
+                    help="HF name or path to a .model SentencePiece file.")
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--out-prefix", default=None,
-                    help="Filename prefix. Defaults to dataset name with /=>_.")
+    ap.add_argument("--out-prefix", default=None)
     ap.add_argument("--tokens-per-shard", type=int, default=10_000_000)
-    ap.add_argument("--max-stories", type=int, default=None,
-                    help="Cap on documents (debug).")
+    ap.add_argument("--max-stories", type=int, default=None)
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -73,13 +107,10 @@ def main():
     prefix = args.out_prefix or args.dataset.replace("/", "_")
 
     print(f"Loading tokenizer: {args.tokenizer}")
-    tok = AutoTokenizer.from_pretrained(args.tokenizer)
-    if tok.vocab_size > 65535:
-        raise ValueError(f"Vocab size {tok.vocab_size} exceeds uint16 max (65535)")
-    eos_id = tok.eos_token_id
-    if eos_id is None:
-        raise ValueError("Tokenizer has no EOS; required for document separation")
-    print(f"  vocab_size={tok.vocab_size}  eos_id={eos_id}")
+    encode_batch, vocab_size, eos_id = load_tokenizer(args.tokenizer)
+    if vocab_size > 65535:
+        raise ValueError(f"Vocab size {vocab_size} exceeds uint16 max")
+    print(f"  vocab_size={vocab_size}  eos_id={eos_id}")
 
     print(f"Loading dataset: {args.dataset} ({args.split})")
     ds = load_dataset(args.dataset, split=args.split)
@@ -89,17 +120,15 @@ def main():
 
     print("Tokenizing...")
     def tokenize_batch(batch):
-        encoded = tok(batch["text"], add_special_tokens=False)
-        return {"ids": encoded["input_ids"]}
+        return {"ids": encode_batch(batch["text"])}
 
     tokenized = ds.map(
         tokenize_batch, batched=True, batch_size=1024,
         remove_columns=ds.column_names, desc="tokenizing",
     )
 
-    # Stream-write shards. Buffer to ~tokens_per_shard, then flush.
     target = args.tokens_per_shard
-    buf = np.empty(target + 65536, dtype=np.uint16)  # slack for the final document
+    buf = np.empty(target + 65536, dtype=np.uint16)
     buf_pos = 0
     shard_idx = 0
     total_tokens = 0
@@ -107,9 +136,8 @@ def main():
     pbar = tqdm(tokenized, desc="writing")
     for record in pbar:
         ids = record["ids"]
-        n = len(ids) + 1  # +1 for EOS
+        n = len(ids) + 1
 
-        # Grow buffer if needed (rare, only for huge documents).
         if buf_pos + n > buf.shape[0]:
             grown = np.empty(buf_pos + n + 65536, dtype=np.uint16)
             grown[:buf_pos] = buf[:buf_pos]
@@ -129,7 +157,6 @@ def main():
             shard_idx += 1
             buf_pos = 0
 
-    # Flush trailing partial shard.
     if buf_pos > 0:
         shard_path = out_dir / f"{prefix}_{args.split}_{shard_idx:06d}.bin"
         write_shard(shard_path, buf[:buf_pos])

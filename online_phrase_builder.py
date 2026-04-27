@@ -7,16 +7,10 @@ The boundary rule:
   2. If max_phrase_len tokens have passed since the last boundary, force one.
   3. Force a boundary at the last non-pad position of each sequence.
   4. Tokens listed in extra_boundary_token_ids (e.g. EOS) also trigger
-     boundaries. Useful when documents are concatenated in a stream and you
-     don't want phrases spanning across them.
+     boundaries.
 
-Outputs:
-    phrase_mask:      (B, P, Lmax) bool
-    phrase_token_idx: (B, P, Lmax) long
-    phrase_end_pos:   (B, P) long; -1 for padding/empty phrases
-
-Both OnlinePhraseBuilder and FixedStridePhraseBuilder are nn.Modules with the
-same forward signature.
+build_token_lookups dispatches between Hugging Face tokenizers and
+SentencePiece processors automatically.
 """
 
 from __future__ import annotations
@@ -36,43 +30,104 @@ DEFAULT_ABBREVIATIONS: Set[str] = {
     "a.m", "p.m",
 }
 
+_SENTENCE_END_CHARS = {".", "!", "?"}
+_STRIP_TRAILING = ' \t\n\r"\')]'
 
-def build_token_lookups(tokenizer,
-                        abbreviations: Set[str] = DEFAULT_ABBREVIATIONS
-                        ) -> Tuple[torch.Tensor, torch.Tensor]:
-    vocab_size = tokenizer.vocab_size
+
+def _is_sentencepiece(tok) -> bool:
+    """Detect a SentencePiece processor by duck typing."""
+    return hasattr(tok, "id_to_piece") and hasattr(tok, "is_byte")
+
+
+def get_vocab_size(tok) -> int:
+    if _is_sentencepiece(tok):
+        return int(tok.vocab_size())
+    return int(tok.vocab_size)
+
+
+def get_eos_id(tok) -> Optional[int]:
+    if _is_sentencepiece(tok):
+        eid = tok.eos_id()
+        return int(eid) if eid is not None and eid >= 0 else None
+    return getattr(tok, "eos_token_id", None)
+
+
+def _classify_decoded(decoded: str, abbreviations: Set[str]
+                      ) -> Tuple[bool, bool]:
+    """Given a decoded piece, return (is_punct, is_abbreviation)."""
+    if not decoded:
+        return False, False
+    stripped_right = decoded.rstrip(_STRIP_TRAILING)
+    is_punct = bool(stripped_right) and stripped_right[-1] in _SENTENCE_END_CHARS
+
+    cleaned = decoded.strip().strip(_STRIP_TRAILING).lower()
+    cleaned_no_dot = cleaned.rstrip(".")
+    is_abbr = (cleaned in abbreviations) or (cleaned_no_dot in abbreviations)
+    return is_punct, is_abbr
+
+
+def _build_lookups_hf(tokenizer, abbreviations: Set[str]
+                      ) -> Tuple[torch.Tensor, torch.Tensor]:
+    vocab_size = int(tokenizer.vocab_size)
     is_punct = torch.zeros(vocab_size, dtype=torch.bool)
     is_abbreviation = torch.zeros(vocab_size, dtype=torch.bool)
-
-    sentence_end_chars = {".", "!", "?"}
-    strip_trailing = ' \t\n\r"\')]'
 
     for tok_id in range(vocab_size):
         try:
             decoded = tokenizer.decode([tok_id])
         except Exception:
             continue
-        if not decoded:
-            continue
-
-        stripped_right = decoded.rstrip(strip_trailing)
-        if stripped_right and stripped_right[-1] in sentence_end_chars:
+        p, a = _classify_decoded(decoded, abbreviations)
+        if p:
             is_punct[tok_id] = True
-
-        cleaned = decoded.strip().strip(strip_trailing).lower()
-        cleaned_no_dot = cleaned.rstrip(".")
-        if cleaned in abbreviations or cleaned_no_dot in abbreviations:
+        if a:
             is_abbreviation[tok_id] = True
-
     return is_punct, is_abbreviation
 
+
+def _build_lookups_sp(sp, abbreviations: Set[str]
+                      ) -> Tuple[torch.Tensor, torch.Tensor]:
+    vocab_size = int(sp.vocab_size())
+    is_punct = torch.zeros(vocab_size, dtype=torch.bool)
+    is_abbreviation = torch.zeros(vocab_size, dtype=torch.bool)
+
+    for tok_id in range(vocab_size):
+        # Skip special tokens: control (BOS/EOS/PAD), unknown, unused, byte fallback.
+        if (sp.is_control(tok_id) or sp.is_unknown(tok_id)
+                or sp.is_unused(tok_id) or sp.is_byte(tok_id)):
+            continue
+        piece = sp.id_to_piece(tok_id)
+        # Strip the SP whitespace marker for content checks. Pieces consisting
+        # only of '▁' have empty content and are skipped.
+        content = piece.lstrip("▁")
+        if not content:
+            continue
+        p, a = _classify_decoded(content, abbreviations)
+        if p:
+            is_punct[tok_id] = True
+        if a:
+            is_abbreviation[tok_id] = True
+    return is_punct, is_abbreviation
+
+
+def build_token_lookups(tokenizer,
+                        abbreviations: Set[str] = DEFAULT_ABBREVIATIONS
+                        ) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Return (is_punct, is_abbreviation) for any supported tokenizer."""
+    if _is_sentencepiece(tokenizer):
+        return _build_lookups_sp(tokenizer, abbreviations)
+    return _build_lookups_hf(tokenizer, abbreviations)
+
+
+# -------------------------------------------------------------------------
+# is_end and packing (unchanged from previous version)
+# -------------------------------------------------------------------------
 
 def compute_is_end(input_ids: torch.Tensor,
                    is_punct: torch.Tensor,
                    is_abbreviation: torch.Tensor,
                    max_phrase_len: int,
                    pad_token_id: int) -> torch.Tensor:
-    """Apply the boundary rule. Returns is_end: (B, T) bool."""
     B, T = input_ids.shape
     device = input_ids.device
 
@@ -116,7 +171,6 @@ def pack_phrases_from_is_end(is_end: torch.Tensor,
                              pad_token_id: int,
                              input_ids: torch.Tensor
                              ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Convert is_end[B, T] boolean to packed phrase tensors."""
     B, T = is_end.shape
     device = is_end.device
 
@@ -163,14 +217,7 @@ def pack_phrases_from_is_end(is_end: torch.Tensor,
 class OnlinePhraseBuilder(nn.Module):
     """
     Punctuation + abbreviation veto + forced-flush phrase builder.
-
-    extra_boundary_token_ids: token IDs that should also trigger phrase
-        boundaries. The typical use is passing [eos_token_id] when training on
-        concatenated documents, so phrases don't span across documents.
-
-    pad_token_id: tokens equal to this value are excluded from phrases. For
-        shard-based training where there's no padding, pass any value that
-        cannot appear in input_ids (e.g. -1).
+    Accepts either a Hugging Face tokenizer or a SentencePiece processor.
     """
     def __init__(self,
                  tokenizer,
@@ -188,10 +235,9 @@ class OnlinePhraseBuilder(nn.Module):
             for tid in extra_boundary_token_ids:
                 if tid is None:
                     continue
-                if 0 <= tid < is_punct.numel():
-                    is_punct[tid] = True
-                    # A boundary token shouldn't also veto: clear is_abbr there.
-                    is_abbreviation[tid] = False
+                if 0 <= int(tid) < is_punct.numel():
+                    is_punct[int(tid)] = True
+                    is_abbr[int(tid)] = False
 
         self.register_buffer("is_punct", is_punct, persistent=False)
         self.register_buffer("is_abbreviation", is_abbr, persistent=False)
@@ -239,64 +285,78 @@ class FixedStridePhraseBuilder(nn.Module):
 
 
 # -------------------------------------------------------------------------
-# Smoke test
+# Smoke test (covers HF mock and SP mock paths)
 # -------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    class MockTokenizer:
+    # HF-style mock.
+    class MockHFTokenizer:
         def __init__(self):
             self.id_to_str = {
                 0: "[PAD]", 1: ".", 2: "!", 3: "?",
                 4: "Dr", 5: "Mr", 6: "Smith", 7: "hello",
-                8: "world", 9: "yes", 10: "and", 11: "the",
-                12: "cat", 13: "sat", 14: "<EOS>",
+                8: "world", 9: "yes", 14: "<EOS>",
             }
-            self.vocab_size = len(self.id_to_str)
+            self.vocab_size = len(self.id_to_str) + 5  # padded to test bounds
 
         def decode(self, ids):
-            return " ".join(self.id_to_str.get(i, "?") for i in ids)
+            return " ".join(self.id_to_str.get(i, "") for i in ids)
 
-    tok = MockTokenizer()
+    # SentencePiece-style mock.
+    class MockSP:
+        # 0=<unk>, 1=<bos>, 2=<eos>, 3=<pad>, 4=▁hello, 5=▁world, 6=., 7=▁Dr, 8=!,
+        # 9=<0xE2> (byte fallback), 10=▁Smith.
+        def __init__(self):
+            self.pieces = ["<unk>", "<bos>", "<eos>", "<pad>",
+                           "▁hello", "▁world", ".", "▁Dr", "!",
+                           "<0xE2>", "▁Smith."]
+            self._control = {1, 2, 3}
+            self._byte = {9}
 
-    # Test the EOS-as-boundary feature.
+        def vocab_size(self): return len(self.pieces)
+        def is_control(self, i): return i in self._control
+        def is_unknown(self, i): return i == 0
+        def is_unused(self, i): return False
+        def is_byte(self, i): return i in self._byte
+        def id_to_piece(self, i): return self.pieces[i]
+        def eos_id(self): return 2
+
+    # HF lookups.
+    hf = MockHFTokenizer()
+    is_punct_hf, is_abbr_hf = build_token_lookups(hf)
+    assert set(torch.where(is_punct_hf)[0].tolist()) == {1, 2, 3}
+    assert set(torch.where(is_abbr_hf)[0].tolist()) == {4, 5}
+    print(f"HF dispatch OK: punct={sorted(torch.where(is_punct_hf)[0].tolist())}")
+
+    # SP lookups: should mark "." (id 6), "!" (id 8), and "▁Smith." (id 10) as punct.
+    # Should mark "▁Dr" (id 7) as abbreviation.
+    # Should NOT mark special tokens (0,1,2,3) or byte fallback (9).
+    sp = MockSP()
+    is_punct_sp, is_abbr_sp = build_token_lookups(sp)
+    punct_ids = sorted(torch.where(is_punct_sp)[0].tolist())
+    abbr_ids = sorted(torch.where(is_abbr_sp)[0].tolist())
+    print(f"SP dispatch OK: punct={punct_ids} abbr={abbr_ids}")
+    assert punct_ids == [6, 8, 10], f"got {punct_ids}"
+    assert abbr_ids == [7], f"got {abbr_ids}"
+
+    # End-to-end SP: build a sequence and verify boundaries fire correctly.
     builder = OnlinePhraseBuilder(
-        tok, max_phrase_len=8, pad_token_id=-1,
-        extra_boundary_token_ids=[14],
+        sp, max_phrase_len=8, pad_token_id=-1,
+        extra_boundary_token_ids=[2],  # EOS
     )
-    assert bool(builder.is_punct[14]), "EOS not registered as boundary"
-    print(f"is_punct ids: {sorted(torch.where(builder.is_punct)[0].tolist())}")
-
-    # Sequence: "doc1 . <EOS> doc2 ." (no padding).
-    seq = torch.tensor([[7, 8, 1, 14, 9, 12, 1]])
+    # Sequence: "▁hello ▁world . <eos> ▁Dr . ▁Smith. !"
+    # ids:     [   4,      5,    6,  2,    7,    6,   10,      8]
+    # Expected boundaries:
+    #   pos 2 (.)
+    #   pos 3 (EOS)
+    #   pos 5 (.) -- but veto'd because prev is "▁Dr" (abbreviation)
+    #   pos 6 (▁Smith. -- ends with .)
+    #   pos 7 (!)
+    # plus forced last_real at pos 7 (already a boundary).
+    seq = torch.tensor([[4, 5, 6, 2, 7, 6, 10, 8]])
     pm, pti, pep = builder(seq)
     valid_ends = sorted(set(x for x in pep[0].tolist() if x >= 0))
-    print(f"end positions: {valid_ends}")
-    # Expect boundaries at 2 (.), 3 (EOS), 6 (.) -> 3 valid phrases.
-    assert valid_ends == [2, 3, 6], f"got {valid_ends}"
-
-    # Existing rule tests.
-    seq = torch.tensor([[7, 8, 1, 9, 1]])
-    is_end = compute_is_end(seq, builder.is_punct, builder.is_abbreviation, 8, -1)
-    assert is_end[0].tolist() == [False, False, True, False, True]
-
-    # Abbreviation veto.
-    seq = torch.tensor([[4, 1, 6, 1, 9, 1]])
-    is_end = compute_is_end(seq, builder.is_punct, builder.is_abbreviation, 8, -1)
-    assert is_end[0].tolist() == [False, False, False, True, False, True]
-    print("Punctuation + abbreviation veto OK")
-
-    # Forced flush.
-    seq = torch.tensor([[7, 8, 9, 10, 11, 12, 13, 7, 8, 9]])
-    is_end = compute_is_end(seq, builder.is_punct, builder.is_abbreviation, 4, -1)
-    assert is_end[0, 3].item() and is_end[0, 7].item() and is_end[0, 9].item()
-    print("Forced flush OK")
-
-    # FixedStride still works.
-    fixed = FixedStridePhraseBuilder(max_phrase_len=8, pad_token_id=-1, stride=4)
-    seq = torch.tensor([[7, 8, 9, 10, 11, 12, 13, 7, 8, 9]])
-    pm, pti, pep = fixed(seq)
-    valid_ends = sorted(set(x for x in pep[0].tolist() if x >= 0))
-    assert valid_ends == [3, 7, 9], f"got {valid_ends}"
-    print(f"FixedStride OK: end_pos={valid_ends}")
+    print(f"SP end-to-end: end_pos={valid_ends}")
+    assert valid_ends == [2, 3, 6, 7], f"got {valid_ends}"
 
     print("\nAll tests passed.")

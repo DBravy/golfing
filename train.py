@@ -4,24 +4,18 @@ Training loop for HybridTransformerLM on shard-based token data.
 Designed for a single T4 (16 GB). Uses fp16 AMP (T4 has no bf16).
 
 Data is consumed from binary token shards produced by prepare_shards.py.
-Sequences are fixed-length (--seq-len), every batch is exactly (B, seq_len),
-no padding. Documents are concatenated in the stream with EOS between them;
-EOS is registered as a phrase boundary so phrases don't span documents.
+The --tokenizer flag accepts either a Hugging Face tokenizer name or a path
+to a SentencePiece .model file (auto-detected by the .model extension).
 
 Usage:
-    # First, write shards (one-time):
-    python prepare_shards.py --dataset roneneldan/TinyStories --split train \\
-        --tokenizer gpt2 --out-dir ./data/datasets/tinystories_gpt2
-    python prepare_shards.py --dataset roneneldan/TinyStories --split validation \\
-        --tokenizer gpt2 --out-dir ./data/datasets/tinystories_gpt2
+    # Tokenize once with prepare_shards.py, then:
 
-    # Then train:
-    python train.py --steps 5000 --batch-size 8 --seq-len 384 --lr 3e-4 \\
-        --chunker online --log-file run_online.jsonl
-
-    # Fixed-stride ablation:
-    python train.py --steps 5000 --batch-size 8 --seq-len 384 --lr 3e-4 \\
-        --chunker fixed --fixed-stride 4 --log-file run_fixed.jsonl
+    # Train with custom SentencePiece tokenizer
+    python train.py \\
+        --tokenizer ./data/tokenizers/tinystories_8192_bpe.model \\
+        --data-dir ./data/datasets/tinystories_sp8192 \\
+        --steps 5000 --batch-size 8 --seq-len 512 --lr 3e-4 \\
+        --chunker online --log-file run_sp_online.jsonl
 """
 
 from __future__ import annotations
@@ -31,21 +25,41 @@ import json
 import math
 import time
 from pathlib import Path
+from typing import Optional
 
 import torch
 
 from model import ModelConfig, HybridTransformerLM
-from online_phrase_builder import OnlinePhraseBuilder, FixedStridePhraseBuilder
+from online_phrase_builder import (
+    OnlinePhraseBuilder, FixedStridePhraseBuilder,
+    get_vocab_size, get_eos_id,
+)
 from dataset import TokenLoader, load_validation_tokens
 
 
-# Sentinel pad value: -1 cannot appear in real token streams (tokens are uint16
-# in [0, vocab_size)), so the phrase builder treats every position as real.
-PAD_SENTINEL = -1
+PAD_SENTINEL = -1  # impossible value (real tokens are uint16 -> [0, 65535])
 
 
 # -------------------------------------------------------------------------
-# LR schedule
+# Tokenizer loading
+# -------------------------------------------------------------------------
+
+def load_tokenizer(spec: str):
+    """Returns a tokenizer object (HF or SentencePiece) auto-detected by suffix."""
+    if spec.endswith(".model"):
+        try:
+            import sentencepiece as spm
+        except ImportError as e:
+            raise SystemExit(
+                "sentencepiece is not installed. Run: pip install sentencepiece"
+            ) from e
+        return spm.SentencePieceProcessor(model_file=spec)
+    from transformers import AutoTokenizer
+    return AutoTokenizer.from_pretrained(spec)
+
+
+# -------------------------------------------------------------------------
+# LR schedule and eval (unchanged)
 # -------------------------------------------------------------------------
 
 def get_lr(step: int, total_steps: int, base_lr: float, warmup: int,
@@ -55,10 +69,6 @@ def get_lr(step: int, total_steps: int, base_lr: float, warmup: int,
     progress = (step - warmup) / max(1, total_steps - warmup)
     return min_lr + 0.5 * (base_lr - min_lr) * (1 + math.cos(math.pi * progress))
 
-
-# -------------------------------------------------------------------------
-# Eval over the full validation token stream
-# -------------------------------------------------------------------------
 
 @torch.no_grad()
 def evaluate(model, val_tokens: torch.Tensor, seq_len: int, batch_size: int,
@@ -91,22 +101,16 @@ def evaluate(model, val_tokens: torch.Tensor, seq_len: int, batch_size: int,
 
 def main():
     ap = argparse.ArgumentParser()
-    # Data paths.
-    ap.add_argument("--data-dir", default="./data/datasets/tinystories_gpt2",
-                    help="Directory containing the shard files.")
-    ap.add_argument("--train-glob", default="*_train_*.bin",
-                    help="Glob pattern (relative to --data-dir) for train shards.")
-    ap.add_argument("--val-glob", default="*_validation_*.bin",
-                    help="Glob pattern for validation shards.")
+    ap.add_argument("--data-dir", default="./data/datasets/tinystories_gpt2")
+    ap.add_argument("--train-glob", default="*_train_*.bin")
+    ap.add_argument("--val-glob", default="*_validation_*.bin")
     ap.add_argument("--tokenizer", default="gpt2",
-                    help="HF tokenizer name (used by OnlinePhraseBuilder).")
+                    help="HF tokenizer name or path to .model SentencePiece file.")
 
-    # Sequence shape.
-    ap.add_argument("--seq-len", type=int, default=384)
+    ap.add_argument("--seq-len", type=int, default=512)
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--accum-steps", type=int, default=1)
 
-    # Training schedule.
     ap.add_argument("--steps", type=int, default=5000)
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--warmup", type=int, default=200)
@@ -115,12 +119,10 @@ def main():
     ap.add_argument("--eval-every", type=int, default=500)
     ap.add_argument("--ckpt-every", type=int, default=2000)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--config-overrides", type=str, default=None,
-                    help="JSON dict of ModelConfig fields to override.")
+    ap.add_argument("--config-overrides", type=str, default=None)
     ap.add_argument("--ckpt-dir", default="./checkpoints")
     ap.add_argument("--log-file", default=None)
 
-    # Chunker.
     ap.add_argument("--chunker", choices=["online", "fixed"], default="online")
     ap.add_argument("--fixed-stride", type=int, default=4)
 
@@ -132,11 +134,12 @@ def main():
     if device.type == "cuda":
         print(f"GPU:    {torch.cuda.get_device_name(0)}")
 
-    # Tokenizer (used only by the phrase builder).
-    from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
+    print(f"Loading tokenizer: {args.tokenizer}")
+    tokenizer = load_tokenizer(args.tokenizer)
+    vocab_size = get_vocab_size(tokenizer)
+    eos_id = get_eos_id(tokenizer)
+    print(f"  vocab_size={vocab_size}  eos_id={eos_id}")
 
-    # Loaders.
     data_dir = Path(args.data_dir)
     train_pattern = str(data_dir / args.train_glob)
     val_pattern = str(data_dir / args.val_glob)
@@ -148,19 +151,15 @@ def main():
     print(f"Train shard files: {len(train_loader.stream.files)}")
     print(f"Validation tokens: {val_tokens.numel():,}")
 
-    # Model config.
-    model_cfg = ModelConfig(vocab_size=tokenizer.vocab_size)
+    model_cfg = ModelConfig(vocab_size=vocab_size)
     if args.config_overrides:
         overrides = json.loads(args.config_overrides)
         for k, v in overrides.items():
             setattr(model_cfg, k, v)
     print(f"\nModel config: {model_cfg}")
 
-    # Phrase builder.
     if args.chunker == "online":
-        extras = []
-        if tokenizer.eos_token_id is not None:
-            extras.append(tokenizer.eos_token_id)
+        extras = [eos_id] if eos_id is not None else []
         phrase_builder = OnlinePhraseBuilder(
             tokenizer=tokenizer,
             max_phrase_len=model_cfg.max_phrase_len,
@@ -169,8 +168,8 @@ def main():
         )
         n_punct = int(phrase_builder.is_punct.sum().item())
         n_abbr = int(phrase_builder.is_abbreviation.sum().item())
-        print(f"OnlinePhraseBuilder: {n_punct} boundary tokens "
-              f"(incl. EOS={tokenizer.eos_token_id}), {n_abbr} abbreviations")
+        print(f"OnlinePhraseBuilder: {n_punct} boundary tokens (incl. EOS={eos_id}), "
+              f"{n_abbr} abbreviations")
     else:
         phrase_builder = FixedStridePhraseBuilder(
             max_phrase_len=model_cfg.max_phrase_len,
@@ -184,8 +183,8 @@ def main():
     n_total = model.num_parameters(exclude_embeddings=False)
     print(f"Non-embedding params: {n_params:,}")
     print(f"Total params:         {n_total:,}")
+    print(f"Embedding params:     {n_total - n_params:,}")
 
-    # Optimizer with split decay.
     no_decay_substrings = {"bias", "B_pos", "sink_logits"}
     decay_params, nodecay_params = [], []
     for name, p in model.named_parameters():
@@ -285,6 +284,7 @@ def main():
                 "model": model.state_dict(),
                 "optim": optim.state_dict(),
                 "config": vars(model_cfg),
+                "tokenizer": args.tokenizer,
                 "chunker": args.chunker,
                 "fixed_stride": args.fixed_stride,
             }, ckpt_path)
