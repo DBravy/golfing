@@ -44,6 +44,11 @@ class ModelConfig:
     sw_mode: str = "fixed"            # "fixed" or "phrase"
     use_attn_sink: bool = True
 
+    # HCA (heavily compressed attention) path. Disabled by default.
+    use_hca: bool = False
+    hca_stride: int = 64
+    n_hca: int = -1                   # -1 = unbounded lookback
+
     dropout: float = 0.0
 
     def to_attn_config(self) -> UnifiedAttentionConfig:
@@ -60,6 +65,9 @@ class ModelConfig:
             n_win=self.n_win,
             sw_mode=self.sw_mode,
             use_attn_sink=self.use_attn_sink,
+            use_hca=self.use_hca,
+            hca_stride=self.hca_stride,
+            n_hca=self.n_hca,
             dropout=self.dropout,
         )
 
@@ -137,8 +145,8 @@ class HybridTransformerLM(nn.Module):
         loss = None
         if labels is not None:
             loss = F.cross_entropy(
-                logits.view(-1, logits.size(-1)),
-                labels.view(-1),
+                logits.reshape(-1, logits.size(-1)),
+                labels.reshape(-1),
                 ignore_index=-100,
             )
         return logits, loss
@@ -186,3 +194,24 @@ if __name__ == "__main__":
     print(f"loss:         {loss.item():.4f}")
     loss.backward()
     print("backward pass ok")
+
+    # HCA-enabled end-to-end test.
+    print("\n--- HCA-enabled end-to-end ---")
+    cfg_hca = ModelConfig(
+        vocab_size=1024, d_model=128, n_layers=2,
+        n_query_heads=4, head_dim=32, query_compress_dim=64,
+        n_indexer_heads=2, indexer_head_dim=32,
+        top_k=8, n_csa=64, max_phrase_len=8, n_win=16,
+        use_hca=True, hca_stride=16, n_hca=-1,
+    )
+    builder_hca = FixedStridePhraseBuilder(
+        max_phrase_len=cfg_hca.max_phrase_len, pad_token_id=-1, stride=4,
+    )
+    model_hca = HybridTransformerLM(cfg_hca, builder_hca)
+    print(f"non-embedding params (with HCA): {model_hca.num_parameters(True):,}")
+
+    logits_hca, loss_hca = model_hca(x, labels=y)
+    print(f"HCA logits shape: {tuple(logits_hca.shape)}")
+    print(f"HCA loss:         {loss_hca.item():.4f}")
+    loss_hca.backward()
+    print("HCA backward pass ok")

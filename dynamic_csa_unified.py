@@ -58,6 +58,12 @@ class UnifiedAttentionConfig:
     # Sliding window
     n_win: int = 128                  # W (only used when sw_mode == "fixed")
     sw_mode: str = "fixed"            # "fixed" = banded causal, "phrase" = same-phrase causal
+    # HCA (Heavily Compressed Attention) path: MQA over fixed-stride blocks.
+    # Disabled when use_hca is False; enable to add a third concurrent path
+    # alongside CSA and SW in the unified softmax.
+    use_hca: bool = False
+    hca_stride: int = 64              # m' (>> max_phrase_len). Tokens per HCA block.
+    n_hca: int = -1                   # Bounded HCA lookback in tokens. -1 = unbounded.
     # Misc
     use_attn_sink: bool = True
     rope_base: float = 10_000.0
@@ -119,6 +125,19 @@ def apply_rope_per_slot(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
     """
     cos_p = cos[positions].unsqueeze(-2)   # (B, T, K, 1, c)
     sin_p = sin[positions].unsqueeze(-2)
+    return _rope_rotate(x, cos_p, sin_p)
+
+
+def apply_rope_single_head_per_slot(x: torch.Tensor, cos: torch.Tensor,
+                                    sin: torch.Tensor,
+                                    positions: torch.Tensor) -> torch.Tensor:
+    """
+    Apply RoPE where each entry along dim 1 has its own position. No head dim.
+    x:         (B, P, c)
+    positions: (B, P)  long
+    """
+    cos_p = cos[positions]   # (B, P, c)
+    sin_p = sin[positions]
     return _rope_rotate(x, cos_p, sin_p)
 
 
@@ -208,6 +227,67 @@ class SingleHeadPhraseCompressor(nn.Module):
 
 
 # -------------------------------------------------------------------------
+# HCA (Heavily Compressed Attention) compressor
+#
+# Single-head, fixed-stride, no-overlap softmax-pooling compressor. Every
+# `stride` consecutive tokens are folded into one KV vector. Tail tokens
+# that don't form a complete block are dropped here; they are still seen
+# by CSA and the sliding window, and a future persistent cache can absorb
+# completed blocks at sequence end.
+#
+# Output shape: (B, P', c) where P' = T // stride.
+# -------------------------------------------------------------------------
+
+class FixedStrideHCACompressor(nn.Module):
+    def __init__(self, d_model: int, head_dim: int, stride: int):
+        super().__init__()
+        self.head_dim = head_dim
+        self.stride = stride
+        self.W_kv = nn.Linear(d_model, head_dim, bias=False)
+        self.W_z = nn.Linear(d_model, head_dim, bias=False)
+        # Per-slot position bias indexed by intra-block offset.
+        self.B_pos = nn.Parameter(torch.zeros(stride, head_dim))
+        nn.init.normal_(self.B_pos, std=0.02)
+
+    def forward(self, h: torch.Tensor):
+        """
+        h: (B, T, D)
+        Returns:
+          c_hca:   (B, P', c)         compressed single-head KV entries
+          end_pos: (B, P')            last-token position of each block
+        where P' = T // stride. May be 0 when T < stride.
+        """
+        B, T, D = h.shape
+        m = self.stride
+        P = T // m
+
+        if P == 0:
+            empty_kv = h.new_zeros(B, 0, self.head_dim)
+            empty_pos = torch.zeros(B, 0, dtype=torch.long, device=h.device)
+            return empty_kv, empty_pos
+
+        # Truncate to complete blocks and reshape into (B, P, m, D).
+        # `reshape` (rather than `view`) handles the non-contiguous slice that
+        # results when T > P * m (i.e., when there are tail tokens to drop).
+        h_full = h[:, :P * m, :].reshape(B, P, m, D)
+
+        c_tok = self.W_kv(h_full)                           # (B, P, m, c)
+        z_tok = self.W_z(h_full)                            # (B, P, m, c)
+        z_tok = z_tok + self.B_pos.view(1, 1, m, -1)
+
+        # Softmax over the m intra-block positions. Every block is fully real
+        # (we already truncated to complete blocks), so no masking needed.
+        gates = F.softmax(z_tok, dim=2)                     # (B, P, m, c)
+        c_comp = (gates * c_tok).sum(dim=2)                 # (B, P, c)
+
+        # End position of block i is (i + 1) * m - 1.
+        end_pos = torch.arange(m - 1, P * m, m, device=h.device, dtype=torch.long)
+        end_pos = end_pos.unsqueeze(0).expand(B, -1)        # (B, P)
+
+        return c_comp, end_pos
+
+
+# -------------------------------------------------------------------------
 # Lightning indexer (unchanged in spirit; outputs one score per query/phrase)
 # -------------------------------------------------------------------------
 
@@ -259,6 +339,15 @@ class UnifiedHybridAttention(nn.Module):
         # Sliding-window source: one projection from h, used as both K and V
         # (with RoPE applied only on the K-side).
         self.W_swkv = nn.Linear(D, H * c, bias=False)
+
+        # HCA path: single-head fixed-stride compressor (MQA: 1 KV head shared
+        # across H query heads). Optional.
+        if cfg.use_hca:
+            self.hca_compressor = FixedStrideHCACompressor(
+                d_model=D, head_dim=c, stride=cfg.hca_stride,
+            )
+        else:
+            self.hca_compressor = None
 
         # RMSNorms on Q and on K (one shared K norm covers both sources).
         self.q_norm = RMSNorm(c)
@@ -341,7 +430,33 @@ class UnifiedHybridAttention(nn.Module):
         csa_k = apply_rope_per_slot(csa_kv, cos, sin, sel_end_pos)
         csa_v = csa_kv                                           # V unrotated
 
-        # 9. Logits over the two sources.
+        # 8b. HCA path: heavily compressed, MQA, dense.
+        # Single-head KV of shape (B, P', c). Each query head dot-products this
+        # via einsum broadcast (one KV head, H query heads = MQA).
+        if self.hca_compressor is not None:
+            hca_kv, hca_end_pos = self.hca_compressor(h)         # (B, P', c), (B, P')
+            hca_kv = self.k_norm(hca_kv)
+            hca_k = apply_rope_single_head_per_slot(
+                hca_kv, cos, sin, hca_end_pos.clamp(min=0),
+            )                                                    # (B, P', c)
+            hca_v = hca_kv                                       # V unrotated
+            P_hca = hca_kv.size(1)
+
+            # Causal + bounded-lookback visibility: (B, T, P').
+            hca_end_pos_b = hca_end_pos.unsqueeze(1)             # (B, 1, P')
+            hca_pos_b = positions.view(1, T, 1)
+            hca_vis = (hca_end_pos_b < hca_pos_b)
+            if cfg.n_hca >= 0:
+                hca_vis = hca_vis & (hca_end_pos_b >= hca_pos_b - cfg.n_hca)
+        else:
+            hca_kv = h.new_zeros(B, 0, c)
+            hca_k = hca_kv
+            hca_v = hca_kv
+            hca_end_pos = torch.zeros(B, 0, dtype=torch.long, device=h.device)
+            hca_vis = torch.zeros(B, T, 0, dtype=torch.bool, device=h.device)
+            P_hca = 0
+
+        # 9. Logits over all sources.
         # CSA logits: (B, T, H, k)
         csa_logits = torch.einsum("bthc,btkhc->bthk", q, csa_k) / math.sqrt(c)
         csa_logits = csa_logits.masked_fill(~slot_valid.unsqueeze(2),
@@ -365,8 +480,15 @@ class UnifiedHybridAttention(nn.Module):
                                           float("-inf"))
         sw_logits = sw_logits.permute(0, 2, 1, 3)                # (B, T, H, T)
 
-        # 10. Concatenate slot axis and softmax once.
-        combined = torch.cat([csa_logits, sw_logits], dim=-1)    # (B, T, H, k+T)
+        # HCA logits: (B, T, H, P'). MQA via broadcast over the H axis.
+        # einsum: q is (B, T, H, c), hca_k is (B, P', c).
+        hca_logits = torch.einsum("bthc,bpc->bthp", q, hca_k) / math.sqrt(c)
+        hca_logits = hca_logits.masked_fill(~hca_vis.unsqueeze(2),
+                                            float("-inf"))
+
+        # 10. Concatenate slot axis and softmax once across all sources.
+        combined = torch.cat([csa_logits, sw_logits, hca_logits],
+                             dim=-1)                             # (B, T, H, k+T+P')
 
         if self.sink_logits is not None:
             sink = self.sink_logits.view(1, 1, H, 1).expand(B, T, H, 1)
@@ -376,20 +498,24 @@ class UnifiedHybridAttention(nn.Module):
             attn = F.softmax(combined, dim=-1)
 
         # If a query has no valid keys at all, zero its row to avoid NaNs.
-        any_valid = torch.cat(
-            [slot_valid, sw_mask],
-            dim=-1
-        ).any(dim=-1, keepdim=True).unsqueeze(2)                 # (B, T, 1, 1)
+        # any_valid is (B, T, 1, 1) after broadcasting across heads/keys.
+        sw_any = sw_mask.any(dim=-1, keepdim=True)               # (B, T, 1)
+        csa_any = slot_valid.any(dim=-1, keepdim=True)           # (B, T, 1)
+        hca_any = hca_vis.any(dim=-1, keepdim=True)              # (B, T, 1)
+        any_valid = (csa_any | sw_any | hca_any).unsqueeze(2)    # (B, T, 1, 1)
         attn = torch.where(any_valid, attn, torch.zeros_like(attn))
         attn = self.dropout(attn)
 
         # 11. Apply attention back to each source's V and sum.
-        csa_attn = attn[..., :k_select]                          # (B, T, H, k)
-        sw_attn = attn[..., k_select:k_select + T]               # (B, T, H, T)
+        csa_attn = attn[..., :k_select]                              # (B, T, H, k)
+        sw_attn = attn[..., k_select:k_select + T]                   # (B, T, H, T)
+        hca_attn = attn[..., k_select + T:k_select + T + P_hca]      # (B, T, H, P')
 
         csa_out = torch.einsum("bthk,btkhc->bthc", csa_attn, csa_v)
         sw_out = torch.einsum("bths,bshc->bthc", sw_attn, sw_v)
-        out = csa_out + sw_out                                   # (B, T, H, c)
+        # MQA output: (B, T, H, P') @ (B, P', c) -> (B, T, H, c) via broadcast.
+        hca_out = torch.einsum("bthp,bpc->bthc", hca_attn, hca_v)
+        out = csa_out + sw_out + hca_out                         # (B, T, H, c)
 
         out = out.reshape(B, T, H * c)
         return self.W_o(out)
@@ -472,6 +598,9 @@ def count_attention_params(cfg: UnifiedAttentionConfig) -> dict:
         "idx W_z":                D * ci,
         "idx B_pos":              Lmax * ci,
         "W_swkv (SW K=V)":        D * H * c,
+        "hca W_kv":               (D * c) if cfg.use_hca else 0,
+        "hca W_z":                (D * c) if cfg.use_hca else 0,
+        "hca B_pos":              (cfg.hca_stride * c) if cfg.use_hca else 0,
         "W_o":                    H * c * D,
         "q_norm + k_norm":        2 * c,
         "sink_logits":            H if cfg.use_attn_sink else 0,
@@ -543,3 +672,90 @@ if __name__ == "__main__":
     print("\nParameter breakdown at target config (D=512, H=8, c=64):")
     for k, v in count_attention_params(target).items():
         print(f"  {k:<28s} {v:>10,d}")
+
+    # ---------------------------------------------------------------------
+    # HCA smoke test
+    # ---------------------------------------------------------------------
+    print("\n=== HCA smoke test ===")
+    torch.manual_seed(0)
+    cfg_hca = UnifiedAttentionConfig(
+        d_model=128, n_query_heads=4, head_dim=32,
+        query_compress_dim=64, top_k=8, n_csa=64,
+        n_indexer_heads=2, indexer_head_dim=32,
+        max_phrase_len=8, n_win=16,
+        use_hca=True, hca_stride=16, n_hca=-1,
+    )
+    block_hca = UnifiedHybridAttentionBlock(cfg_hca)
+
+    B, T = 2, 64
+    x = torch.randn(B, T, cfg_hca.d_model)
+    spans = [[(s, min(s + 3, T)) for s in range(0, T, 3)] for _ in range(B)]
+    mask, tok_idx, end_pos, pid = pack_phrases(spans, T,
+                                               cfg_hca.max_phrase_len, x.device)
+    out_hca = block_hca(x, mask, tok_idx, end_pos, pid)
+    print("HCA output shape:", tuple(out_hca.shape))
+
+    # Compressor sanity: T=64, stride=16 -> P'=4 blocks ending at 15,31,47,63.
+    hca_kv, hca_end_pos = block_hca.attn.hca_compressor(x)
+    print("HCA compressor output:", tuple(hca_kv.shape),
+          "end_pos sample:", hca_end_pos[0].tolist())
+    assert hca_kv.shape == (B, 4, cfg_hca.head_dim)
+    assert hca_end_pos[0].tolist() == [15, 31, 47, 63]
+
+    # Causality with HCA: perturb last token, check earlier outputs unchanged.
+    x2 = x.clone()
+    x2[:, T - 1, :] += 1.0
+    out_hca2 = block_hca(x2, mask, tok_idx, end_pos, pid)
+    diff = (out_hca - out_hca2).abs().max(dim=-1).values
+    print("HCA max diff at last token (>0):",
+          round(diff[:, -1].max().item(), 4))
+    # Last block (positions 48..63) and any query at t >= 16 will see the
+    # last completed block ending at 15, but blocks ending at 31/47/63 are
+    # only visible to queries strictly later. Position 47 should not see the
+    # block ending at 47. So position 47 is unaffected by the last-token
+    # perturbation at t=63.
+    print("HCA max diff at t=47 (should be 0):",
+          round(diff[:, 47].max().item(), 4))
+    print("HCA max diff over first half (should be 0):",
+          round(diff[:, : T // 2].max().item(), 4))
+
+    # Edge case: T < stride. Should produce 0 HCA blocks and not crash.
+    cfg_short = UnifiedAttentionConfig(
+        d_model=128, n_query_heads=4, head_dim=32,
+        query_compress_dim=64, top_k=8, n_csa=64,
+        n_indexer_heads=2, indexer_head_dim=32,
+        max_phrase_len=8, n_win=16,
+        use_hca=True, hca_stride=64,
+    )
+    block_short = UnifiedHybridAttentionBlock(cfg_short)
+    T_short = 32
+    x_short = torch.randn(B, T_short, 128)
+    spans_short = [[(s, min(s + 3, T_short)) for s in range(0, T_short, 3)]
+                   for _ in range(B)]
+    m2, ti2, ep2, pid2 = pack_phrases(spans_short, T_short,
+                                      cfg_short.max_phrase_len, x_short.device)
+    out_short = block_short(x_short, m2, ti2, ep2, pid2)
+    print("Short-seq HCA output shape (P'=0):", tuple(out_short.shape))
+    hca_kv_s, _ = block_short.attn.hca_compressor(x_short)
+    assert hca_kv_s.shape == (B, 0, cfg_short.head_dim)
+
+    # Bounded n_hca: queries beyond the lookback window should not see old blocks.
+    cfg_bounded = UnifiedAttentionConfig(
+        d_model=128, n_query_heads=4, head_dim=32,
+        query_compress_dim=64, top_k=8, n_csa=64,
+        n_indexer_heads=2, indexer_head_dim=32,
+        max_phrase_len=8, n_win=16,
+        use_hca=True, hca_stride=16, n_hca=20,
+    )
+    block_bnd = UnifiedHybridAttentionBlock(cfg_bounded)
+    out_bnd = block_bnd(x, mask, tok_idx, end_pos, pid)
+    print("Bounded-HCA output shape:", tuple(out_bnd.shape))
+
+    # Parameter counts including HCA path.
+    print("\nParameter breakdown with HCA enabled (D=128, H=4, c=32, m'=16):")
+    for k, v in count_attention_params(cfg_hca).items():
+        print(f"  {k:<28s} {v:>10,d}")
+
+    # Backward pass test.
+    out_hca.sum().backward()
+    print("\nHCA backward pass OK")
